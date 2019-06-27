@@ -40,7 +40,7 @@ public class SkipWords {
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
-            /*
+
             Configuration conf = context.getConfiguration();
             Path path[] = DistributedCache.getLocalCacheFiles(conf);
             FileSystem fs = FileSystem.getLocal(conf);
@@ -58,8 +58,8 @@ public class SkipWords {
             for (int i = 0; i < arrayList.size(); i++) {
                 sws[i] = arrayList.get(i);
             }
-            */
-            sws = new String[]{"I", "you"};
+
+            //sws = new String[]{"I", "you"};
             analyzer = new MyStopAnalyzer(sws);
         }
 
@@ -90,6 +90,7 @@ public class SkipWords {
     }
 
     public static class SkipWordsReducer extends Reducer<Text, Text, Text, Text> {
+        private int idx = 0;
         @Override
         protected void reduce(Text key, Iterable<Text> values,
                               Reducer<Text, Text, Text, Text>.Context context)
@@ -97,52 +98,15 @@ public class SkipWords {
             if (values == null) {
                 return;
             }
-
-            context.write(key, new Text("1"));
+            idx++;
+            context.write(key, new Text(String.valueOf(idx)));
         }
     }
-
-
-    public static String[] toArrayByFileReader(String name) {
-        // 使用ArrayList来存储每行读取到的字符串
-        ArrayList<String> arrayList = new ArrayList<String>();
-        try {
-            FileReader fr = new FileReader(name);
-            BufferedReader bf = new BufferedReader(fr);
-            String str;
-            // 按行读取字符串
-            while ((str = bf.readLine()) != null) {
-                arrayList.add(str);
-            }
-            bf.close();
-            fr.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        int length = arrayList.size();
-        String[] array = new String[length];
-        for (int i = 0; i < length; i++) {
-            array[i] = arrayList.get(i);
-        }
-        return array;
-    }
-
 
     public static class MyStopAnalyzer extends Analyzer {
         private Set stops;
 
         public MyStopAnalyzer(String[] sws) {
-            // 将字符串数组添加到停用词的set集合中
-            stops = StopFilter.makeStopSet(sws, true);
-            // 加入原来的停用词
-            stops.addAll(StopAnalyzer.ENGLISH_STOP_WORDS_SET);
-        }
-
-        /**
-         * 默认构造方法
-         */
-        public MyStopAnalyzer(String filename) {
-            String[] sws = toArrayByFileReader(filename);
             // 将字符串数组添加到停用词的set集合中
             stops = StopFilter.makeStopSet(sws, true);
             // 加入原来的停用词
@@ -207,7 +171,7 @@ public class SkipWords {
         job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        //DistributedCache.addCacheFile(new URI(cachePath), job.getConfiguration());
+        DistributedCache.addCacheFile(new URI(cachePath), job.getConfiguration());
         FileInputFormat.addInputPath(job, new Path(inputPath));
         FileOutputFormat.setOutputPath(job, new Path(outputPath));
 
