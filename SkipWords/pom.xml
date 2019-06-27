@@ -41,15 +41,24 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin-->
         </plugins>
     </build>
 
 
     <properties>
         <hadoop.version>2.7.1</hadoop.version>
-        <lucene.version>7.1.0</lucene.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <lucene.version>5.0.0</lucene.version>
+        <!--maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target-->
     </properties>
 
     <dependencies>
