@@ -20,7 +20,7 @@ public class TF {
             StringTokenizer tokenizer = new StringTokenizer(value.toString());
             while (tokenizer.hasMoreTokens()) {
                 allWordCount++;
-                label.set(String.join(":", tokenizer.nextToken(), fileName));
+                label.set(tokenizer.nextToken() + ":" + fileName);
                 context.write(label, one);
             }
             context.write(new Text("!:" + fileName), new Text(String.valueOf(allWordCount)));
