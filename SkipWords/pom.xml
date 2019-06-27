@@ -47,7 +47,7 @@
 
     <properties>
         <hadoop.version>2.7.1</hadoop.version>
-        <lucene.version>6.0.0</lucene.version>
+        <lucene.version>7.1.0</lucene.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
