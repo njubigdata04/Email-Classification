@@ -6,6 +6,8 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.filecache.ClientDistributedCacheManager;
@@ -31,6 +33,8 @@ import org.apache.lucene.analysis.util.CharArraySet;
 
 public class SkipWords {
 
+    public static String tmpFilePath = "/task3-tmp-out";
+
     public static class SkipWordsMapper extends Mapper<Object, Text, Text, Text> {
 
         private final Text one = new Text("1");
@@ -40,46 +44,57 @@ public class SkipWords {
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
-
             Configuration conf = context.getConfiguration();
-            Path path[] = DistributedCache.getLocalCacheFiles(conf);
+            Path[] path = DistributedCache.getLocalCacheFiles(conf);
             FileSystem fs = FileSystem.getLocal(conf);
             FSDataInputStream in = fs.open(path[0]);
             Scanner scan = new Scanner(in);
             ArrayList<String> arrayList = new ArrayList<String>();
             while (scan.hasNext()) {
                 String s = scan.next();
-                System.out.println(Thread.currentThread().getName() + "扫描的内容:  " + s);
                 arrayList.add(s);
             }
             scan.close();
-            fs.close();
+            in.close();
             sws = new String[arrayList.size()];
             for (int i = 0; i < arrayList.size(); i++) {
                 sws[i] = arrayList.get(i);
             }
-
-            //sws = new String[]{"I", "you"};
             analyzer = new MyStopAnalyzer(sws);
         }
 
         @Override
         protected void map(Object key, Text value, Mapper<Object, Text, Text, Text>.Context context)
                 throws IOException, InterruptedException {
-            System.out.println("in setup");
             String fileName = getInputSplitFileName(context.getInputSplit());
             TokenStream stream = null;
             stream = analyzer.tokenStream("renyi", new StringReader(value.toString()));
             CharTermAttribute cta = stream.addAttribute(CharTermAttribute.class);//保存响应词汇
             //在lucene 4 以上  要加入reset 和  end方法
             stream.reset();
+
+            Configuration conf = context.getConfiguration();
+            String uri = tmpFilePath + "/" + fileName;
+
+            FileSystem fs1 = FileSystem.newInstance(URI.create(uri), conf);
+            FSDataOutputStream out = null;
+            Path path = new Path(uri);
+            if (fs1.exists(path)){
+                out = fs1.append(new Path(uri));
+            } else {
+                out = fs1.create(new Path(uri));
+            }
+
+
             while (stream.incrementToken()) {
-                System.out.println(cta.toString());
-                label.set(cta.toString() + ":" + fileName);
+                String s = cta.toString();
+                label.set(s + ":" + fileName);
                 context.write(label, one);
+                out.writeChars(s + " ");
             }
             stream.end();
             stream.close();
+            fs1.close();
         }
 
         private String getInputSplitFileName(InputSplit inputSplit) {
@@ -91,6 +106,7 @@ public class SkipWords {
 
     public static class SkipWordsReducer extends Reducer<Text, Text, Text, Text> {
         private int idx = 0;
+
         @Override
         protected void reduce(Text key, Iterable<Text> values,
                               Reducer<Text, Text, Text, Text>.Context context)
@@ -124,39 +140,19 @@ public class SkipWords {
     }
 
     public static void main(String[] args) throws Exception {
-        /*
-        String[] str = new String[]{"I", "you", "hate"};
-        Analyzer analyzer1 = new MyStopAnalyzer(str);
-        Analyzer analyzer2 = new StopAnalyzer();
-        String txt = "i love you, i hate you";
-        //自定义的停用词分词器
-        display(txt, analyzer1);
-        System.out.println("-----------------------");
-        //默认的停用词分词器
-        display(txt, analyzer2);
-        String str = "hello, i'm a boy, and i like playing basketball" ;
-        String ztr = "你好，我是一个男孩，我喜欢打篮球" ;
-        Analyzer a = new StandardAnalyzer() ;      //标准分词器
-        Analyzer b = new SimpleAnalyzer() ;        //简单分词器
-        Analyzer c = new StopAnalyzer() ;          //停用词分词器
-        Analyzer d = new WhitespaceAnalyzer() ; //空格分词器
-        display(str,a) ;
-        System. out.println( "-----------------------------");
-        display(str,b) ;
-        System. out.println( "-----------------------------");
-        display(str,c) ;
-        System. out.println( "-----------------------------");
-        display(str,d) ;
-        System. out.println( "-----------------------------");
-        */
-
-        String inputPath = "./input";
-        String cachePath = "./cache";
-        String outputPath = "./output";
-        if (args.length == 3) {
+        String inputPath = "/task3/email";
+        String stopWordsPath = "/task3/Stop_words.txt";
+        String outputPath = "/task3-out";
+        tmpFilePath = "/task3-tmp-out";
+        if (args.length >= 4) {
             inputPath = args[0];
-            cachePath = args[1];
+            stopWordsPath = args[1];
             outputPath = args[2];
+            tmpFilePath = args[3];
+        } else {
+            System.out.println("args error");
+            System.exit(-1);
+            return;
         }
         Configuration configuration = new Configuration();
         removeOutputFolder(configuration, outputPath);
@@ -171,12 +167,23 @@ public class SkipWords {
         job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        DistributedCache.addCacheFile(new URI(cachePath), job.getConfiguration());
+        DistributedCache.addCacheFile(new URI(stopWordsPath), job.getConfiguration());
         FileInputFormat.addInputPath(job, new Path(inputPath));
         FileOutputFormat.setOutputPath(job, new Path(outputPath));
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-
+        /*
+            String uri = "/fff-out/2.txt";
+            Configuration configuration = new Configuration();
+            FileSystem fs1 = FileSystem.get(URI.create(uri), configuration);
+            FSDataOutputStream out = null;
+            try {
+                out = fs1.create(new Path(uri));
+                out.writeUTF("fffsssxzx");
+                fs1.close();
+            } finally {
+            }
+*/
     }
 
     private static void removeOutputFolder(Configuration configuration, String outputPath) throws IOException {
