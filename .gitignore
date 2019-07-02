@@ -1,0 +1,9 @@
+TFIDF/.idea/
+TFIDF/*.iml
+TFIDF/target
+SkipWords/target
+SkipWords/.idea/
+SkipWords/*.iml
+KNN/.idea/
+KNN/target/
+KNN/*.iml
