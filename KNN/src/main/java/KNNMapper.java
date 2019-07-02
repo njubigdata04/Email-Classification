@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWritable<DoubleWritable>> {
+public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWritable> {
     private List<Instance> trainList = new ArrayList<>();
     private static int K = 10;
 
@@ -56,7 +56,7 @@ public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWrit
             distance.add(Double.MAX_VALUE);
             trainLable.add(new DoubleWritable(-1.0));
         }
-        ListWritable<DoubleWritable> lables = new ListWritable<>();
+        ListWritable lables = new ListWritable();
 
         Instance testInstance = new Instance(textLine.toString());
         for (Instance instance : trainList) {
@@ -73,7 +73,10 @@ public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWrit
                 e.printStackTrace();
             }
         }
-        lables.setInstance(trainLable);
-        context.write(textIndex, lables);
+        for (DoubleWritable d : trainLable){
+            lables.push(d);
+        }
+        context.write(new LongWritable(lables.toString().length()), lables);
+        //context.write(new LongWritable(testInstance.getCategory()), lables);
     }
 }
