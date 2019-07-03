@@ -7,3 +7,6 @@ SkipWords/*.iml
 KNN/.idea/
 KNN/target/
 KNN/*.iml
+FeatureExtraction/.idea/
+FeatureExtraction/target/
+FeatureExtraction/*.iml
