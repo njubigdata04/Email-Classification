@@ -7,3 +7,9 @@ SkipWords/*.iml
 KNN/.idea/
 KNN/target/
 KNN/*.iml
+NaiveBayes/.idea/
+NaiveBayes/target/
+NaiveBayes/*.iml
+DataPreprocess/.idea/
+DataPreprocess/target/
+DataPreprocess/*.iml
