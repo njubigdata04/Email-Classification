@@ -1,6 +1,7 @@
 import org.apache.commons.io.IOExceptionWithCause;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -52,17 +53,28 @@ public class NaiveBayes {
     }
 
     //获得停词表
-    public static String[] GetStopWords(URI[] cacheFiles) throws IOException {
+    public static String[] GetStopWords(URI[] cacheFiles, Configuration conf) throws IOException {
         //构建停用词表
         if (cacheFiles != null && cacheFiles.length > 0) {
-            String line;
+            /*String line;
             String tokens;
             BufferedReader bufferedReader = new BufferedReader(new FileReader(cacheFiles[0].getPath()));
             List<String> list = new ArrayList<String>();
             while ((line = bufferedReader.readLine()) != null) {
                 list.add(line);
             }
-            return list.toArray(new String[list.size()]);
+            return list.toArray(new String[list.size()]);*/
+            FileSystem fs = FileSystem.getLocal(conf);
+            FSDataInputStream in = fs.open(new Path(cacheFiles[0]));
+            Scanner scan = new Scanner(in);
+            ArrayList<String> arrayList = new ArrayList<String>();
+            while (scan.hasNext()) {
+                String s = scan.next();
+                arrayList.add(s);
+            }
+            scan.close();
+            in.close();
+            return arrayList.toArray(new String[arrayList.size()]);
         } else
             return new String[0];
     }
@@ -75,7 +87,7 @@ public class NaiveBayes {
         public void setup(Context context) throws IOException, InterruptedException {
             URI[] cacheFiles = context.getCacheFiles();
             //构建停用词表
-            stopwords = NaiveBayes.GetStopWords(cacheFiles);
+            stopwords = NaiveBayes.GetStopWords(cacheFiles, context.getConfiguration());
             analyzer = new MyStopAnalyzer(stopwords);
         }
 
@@ -140,7 +152,7 @@ public class NaiveBayes {
             if (cacheFiles.length < 3)
                 return;
             //第一个是停词表，第二个是类名，第三个是训练集
-            stopwords = NaiveBayes.GetStopWords(cacheFiles);
+            stopwords = NaiveBayes.GetStopWords(cacheFiles, context.getConfiguration());
             analyzer = new MyStopAnalyzer(stopwords);
             URI classURI = cacheFiles[1];
             URI trainURI = cacheFiles[2];
@@ -325,7 +337,7 @@ public class NaiveBayes {
                 //predictJob.setInputFormatClass(SequenceFileInputFormat.class);
                 //impliment by hadoop
                 predictJob.setMapperClass(PredictMapper.class);
-                //predictJob.setNumReduceTasks(1);
+                predictJob.setReducerClass(PredictReducer.class);
                 FileOutputFormat.setOutputPath(predictJob, new Path(outputPath));
                 predictJob.setOutputKeyClass(Text.class);
                 predictJob.setOutputValueClass(Text.class);
@@ -343,6 +355,8 @@ public class NaiveBayes {
         String outputPath = args[3];
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Train Naive Bayes");
+        job.addCacheFile(stopPath);
+        job.addCacheFile(classPath);
         job.setJarByClass(NaiveBayes.class);
         job.setMapperClass(TrainMapper.class);
         job.setCombinerClass(TrainCombiner.class);

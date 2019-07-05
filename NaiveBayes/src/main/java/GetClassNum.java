@@ -12,7 +12,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class GetClassNum {
     public static class ClassMapper extends Mapper<Object, Text, Text, Text>{
@@ -45,8 +47,13 @@ public class GetClassNum {
         @Override
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             int sum = 0;
+            Set<String> words = new HashSet<String>();
             for(Text v:values) {
-                sum ++;
+                String w = v.toString();
+                if(words.contains(w) == false) {
+                    sum++;
+                    words.add(w);
+                }
             }
             list.put(key.toString(), sum);
         }
