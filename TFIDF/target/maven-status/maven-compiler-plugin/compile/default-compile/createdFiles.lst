@@ -1,0 +1,12 @@
+Integrate.class
+TF$TFMapper.class
+TF$TFPartitioner.class
+Integrate$IntegrateMapper.class
+Client.class
+IDF$IDFReducer.class
+TF$TFReducer.class
+TF.class
+Integrate$IntegrateReducer.class
+IDF$IDFMapper.class
+IDF.class
+TF$TFCombiner.class
