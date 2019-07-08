@@ -85,8 +85,8 @@ public class Bayes {
             if (cacheFiles.length < 2)
                 return;
             //第一个是类名，第二个是训练集
-            Path classURI = cacheFiles[0];
-            Path trainURI = cacheFiles[1];
+            Path classURI = cacheFiles[1];
+            Path trainURI = cacheFiles[0];
 
             LOG.error("/-----------------/");
             LOG.error(cacheFiles.length);
@@ -107,16 +107,19 @@ public class Bayes {
                 scan.close();
                 in.close();*/
                 String line = "";
-                BufferedReader bufferedReader = new BufferedReader(new FileReader(classURI.toString()));
+                BufferedReader bufferedReader = new BufferedReader(new FileReader(classURI.toUri().getPath()));
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] sp = line.split("\t");
                     String sclass = sp[0];
-                    String snum = sp[1].split("#")[1];
+                    //String snum = sp[1].split("#")[1];
+                    //sclass  = sp[1].split("#")[0];
+                    String snum = sp[1];
                     ClassSet.put(sclass, Integer.parseInt(snum));//保存类名与文件数
                 }
+                bufferedReader.close();
                 //第二个是训练样本集，数据集包括（类名#单词，数量）
                 //其中（类名#$，数量表示词数总和）
-                bufferedReader = new BufferedReader(new FileReader(trainURI.toString()));
+                bufferedReader = new BufferedReader(new FileReader(trainURI.toUri().getPath()));
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] sp = line.split("\t");
                     String sclassword = sp[0];
@@ -145,6 +148,7 @@ public class Bayes {
                     else
                         TrainSet.put(sclass, Integer.parseInt(snum));
                 }
+                bufferedReader.close();
                 /*in = fs.open(new Path(trainURI));
                 scan = new Scanner(in);
                 while (scan.hasNextLine()) {
@@ -234,7 +238,7 @@ public class Bayes {
             if (cacheFiles.length < 2)
                 return;
             //第一个是类名，第二个是训练集
-            Path classURI = cacheFiles[0];
+            Path classURI = cacheFiles[1];
             //URI trainURI = cacheFiles[1];
             if (cacheFiles != null && cacheFiles.length >= 2) {
                 /*FileSystem fs = FileSystem.getLocal(context.getConfiguration());
@@ -255,7 +259,8 @@ public class Bayes {
                 while ((line = bufferedReader.readLine()) != null) {
                     String[] sp = line.split("\t");
                     String sclass = sp[0];
-                    String snum = sp[1].split("#")[1];
+                    //String snum = sp[1].split("#")[1];
+                    String snum = sp[1];
                     ClassSet.put(sclass, Integer.parseInt(snum));//保存类名与文件数
                     SumFile += Double.parseDouble(snum);
                 }
@@ -265,7 +270,13 @@ public class Bayes {
 
         @Override
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            //int sum = 0;
+            /*int sum = 0;
+            Text V = new Text("sa");
+            for(Map.Entry<String, Integer> cs:ClassSet.entrySet()){
+                context.write(new Text(cs.getKey()), new Text(cs.getValue().toString()));
+            }
+            //context.write(key, V);
+            return;*/
             String[] parts = key.toString().split("#");
             String filename = parts[0];
             String classname = parts[1];
@@ -283,20 +294,39 @@ public class Bayes {
                         max = count;
                     }
                 }
-                context.write(new Text(filename), new Text(cn));
+                context.write(new Text(CurrentFile), new Text(cn));
                 MapResult.clear();
             }
             CurrentFile = filename;
             double number = 0;
             if (MapResult.containsKey(classname))
                 number = MapResult.get(classname);
-            else
+            else if(ClassSet.containsKey(classname))
                 number = ClassSet.get(classname) / SumFile;
+            else
+            {
+                System.out.println("/****************\n" + classname + "\n" + SumFile);
+                number = ClassSet.get(classname) / SumFile;
+            }
             for (Text v:values) {
                 double tmp = Double.parseDouble(v.toString());
                 number*=tmp;
             }
             MapResult.put(classname, number);
+        }
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException{
+            double max = 0;
+            String cn = "";
+            for (Map.Entry<String, Double> entry : MapResult.entrySet()) {
+                double count = entry.getValue();
+                if (count > max) {
+                    cn = entry.getKey();
+                    max = count;
+                }
+            }
+            context.write(new Text(CurrentFile), new Text(cn));
+            MapResult.clear();
         }
     }
 
@@ -329,13 +359,16 @@ public class Bayes {
             FileOutputFormat.setOutputPath(job, tmpDir);
             //job.setOutputFormatClass(SequenceFileOutputFormat.class);
             if (job.waitForCompletion(true)) {
+                conf = new Configuration();
                 Job predictJob = Job.getInstance(conf, "Predict Naive Bayes");
                 predictJob.setJarByClass(Bayes.class);
-                predictJob.addCacheFile(new Path(classPath).toUri());
+
                 predictJob.addCacheFile(new Path(tmpDirStr + "/part-r-00000").toUri());
+                predictJob.addCacheFile(new Path(classPath).toUri());
+
                 FileInputFormat.addInputPath(predictJob, new Path(inputTestPath));
                 FileInputFormat.setInputDirRecursive(predictJob, true);
-                //impliment by hadoop
+                //impliment by hadoop+
                 predictJob.setMapperClass(PredictMapper.class);
                 predictJob.setCombinerClass(PredictCombiner.class);
                 predictJob.setPartitionerClass(PredictPartition.class);
