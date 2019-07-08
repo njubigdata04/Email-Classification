@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/NaiveBayes/BigData.iml" filepath="$PROJECT_DIR$/NaiveBayes/BigData.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Email-Classification.iml" filepath="$PROJECT_DIR$/.idea/Email-Classification.iml" />
+      <module fileurl="file://$PROJECT_DIR$/KNN/KNN.iml" filepath="$PROJECT_DIR$/KNN/KNN.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SparkSVM/SparkSVM.iml" filepath="$PROJECT_DIR$/SparkSVM/SparkSVM.iml" />
+    </modules>
+  </component>
+</project>

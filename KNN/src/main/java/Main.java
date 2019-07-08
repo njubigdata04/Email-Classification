@@ -25,6 +25,8 @@ public class Main {
             job.setMapOutputValueClass(ListWritable.class);
             job.addCacheFile(new Path("/cache.txt").toUri());
 
+            System.out.println(new Path("/cache.txt").toUri().toString());
+
             job.setNumReduceTasks(1);
 
             FileInputFormat.addInputPath(job, new Path(args[0]));
