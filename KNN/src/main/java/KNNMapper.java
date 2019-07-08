@@ -3,16 +3,18 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.htrace.commons.logging.LogFactory;
+import org.apache.htrace.commons.logging.Log;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWritable> {
     private List<Instance> trainList = new ArrayList<>();
     private static int K = 10;
+
+    private static final Log LOG = LogFactory.getLog(KNNMapper.class);
 
     public static void setK(int k) {
         K = k;
