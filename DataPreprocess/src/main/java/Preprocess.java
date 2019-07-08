@@ -65,9 +65,14 @@ public class Preprocess {
             out.writeChars(fn.split("-")[1]);
             ArrayList<String> re = entry.getValue();
             for(String part:re){
-                out.writeChars(" "+ part);
+                //out.writeChars(" "+ part);
+                String s = " " + part;
+                out.write(s.getBytes("utf-8"),0,  s.getBytes().length);
+
             }
-            out.writeChars("\n");
+            String nextline = "\n";
+            out.write(nextline.getBytes("utf-8"),0,  nextline.getBytes().length);
+            //out.writeChars("\n");
         }
         scanner.close();
         in.close();
