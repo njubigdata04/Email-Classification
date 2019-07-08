@@ -100,6 +100,7 @@ public class Client {
 
         job.setMapperClass(Integrate.IntegrateMapper.class);
         job.setReducerClass(Integrate.IntegrateReducer.class);
+      //  job.setPartitionerClass(Integrate.IntegratePartitioner.class);
 
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
