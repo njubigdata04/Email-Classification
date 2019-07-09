@@ -39,7 +39,7 @@ public class IDF {
             Text label = new Text(key.toString());
 
             int totalFileCount = Integer.parseInt(context.getProfileParams()) - 1;
-            double idfValue = Math.log10(1.0 * totalFileCount / fileCount);
+            double idfValue = Math.log10((1.0 * totalFileCount + 1) / (fileCount + 1));
 
             context.write(label, new Text(String.valueOf(idfValue)));
 

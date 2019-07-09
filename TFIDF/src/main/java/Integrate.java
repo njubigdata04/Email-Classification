@@ -1,5 +1,6 @@
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ public class Integrate {
             context.write(new Text(tokenizer.nextToken()), new Text(tokenizer.nextToken()));
         }
     }
+
     public static class IntegrateReducer extends Reducer<Text, Text, Text, Text> {
 
         private double keywordIDF = 0.0d;
@@ -32,9 +34,23 @@ public class Integrate {
 
             Text value = new Text(String.valueOf(Double.parseDouble(values.iterator().next().toString()) * keywordIDF));
 
-            context.write(key, value);
+            String[] nameSegments = key.toString().split(":");
+            String s = nameSegments[1] + ":" + nameSegments[0];
+
+            context.write(new Text(s), value);
         }
     }
-
-
+/*
+    public static class IntegratePartitioner extends Partitioner<Text, Text> {
+        @Override
+        public int getPartition(Text key, Text value, int numPartitions) {
+            if (key.toString().contains(":")) {
+                String fileName = key.toString().split(":")[1];
+                return Math.abs((fileName.hashCode() * 127) % numPartitions);
+            } else {
+                return Math.abs((key.toString().hashCode() * 127) % numPartitions);
+            }
+        }
+    }
+*/
 }

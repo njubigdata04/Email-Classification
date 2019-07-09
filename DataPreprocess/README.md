@@ -4,6 +4,6 @@ hadoop jar ~/cjh/BJY-1.0-SNAPSHOT.jar Preprocess /task3/feature-out/part-r-00000
 
 已有格式：
 
-filename-classnumber：word （空格） tfidf 
+filename-classnumber：word （制表符） tfidf 
 
 classNum （空格） wordnum：tfidf （空格） wordnum：tfidf 

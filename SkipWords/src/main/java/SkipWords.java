@@ -18,7 +18,8 @@ import org.apache.lucene.analysis.util.CharArraySet;
 
 
 public class SkipWords {
-
+    private static Map<String, String> classMap = new HashMap<String, String>();
+/*
     private static Map<String, String> classMap = new HashMap<String, String>() {{
         put("comp.graphics", "1");
         put("comp.os.ms-windows.misc", "2");
@@ -36,123 +37,8 @@ public class SkipWords {
         put("talk.politics.mideast", "14");
         put("talk.politics.misc", "15");
         put("talk.religion.misc", "16");
-    }};
+    }};*/
 
-    /*
-        public static class SkipWordsMapper extends Mapper<Object, Text, Text, Text> {
-
-            private final Text one = new Text("1");
-            private Text label = new Text();
-            private String[] sws;
-            private Analyzer analyzer;
-            Map<String, String> classMap = new HashMap<String, String>() {{
-                put("comp.graphics", "1");
-                put("comp.os.ms-windows.misc", "2");
-                put("comp.sys.ibm.pc.hardware", "3");
-                put("comp.sys.mac.hardware", "4");
-                put("comp.windows.x", "5");
-                put("rec.autos", "6");
-                put("rec.sport.baseball", "7");
-                put("rec.sport.hockey", "8");
-                put("sci.crypt", "9");
-                put("sci.electronics", "10");
-                put("sci.space", "11");
-                put("soc.religion.christian", "12");
-                put("talk.politics.guns", "13");
-                put("talk.politics.mideast", "14");
-                put("talk.politics.misc", "15");
-                put("talk.religion.misc", "16");
-            }};
-
-            @Override
-            public void setup(Context context) throws IOException, InterruptedException {
-                Configuration conf = context.getConfiguration();
-                Path[] path = DistributedCache.getLocalCacheFiles(conf);
-                FileSystem fs = FileSystem.getLocal(conf);
-                FSDataInputStream in = fs.open(path[0]);
-                Scanner scan = new Scanner(in);
-                ArrayList<String> arrayList = new ArrayList<String>();
-                while (scan.hasNext()) {
-                    String s = scan.next();
-                    arrayList.add(s);
-                }
-                scan.close();
-                in.close();
-                sws = new String[arrayList.size()];
-                for (int i = 0; i < arrayList.size(); i++) {
-                    sws[i] = arrayList.get(i);
-                }
-                analyzer = new MyStopAnalyzer(sws);
-            }
-
-            @Override
-            protected void map(Object key, Text value, Mapper<Object, Text, Text, Text>.Context context)
-                    throws IOException, InterruptedException {
-                InputSplit inputSplit = context.getInputSplit();
-
-                String fileName = getInputSplitFileName(inputSplit);
-                String className = getInputSplitClass(inputSplit);
-
-                TokenStream stream = null;
-                stream = analyzer.tokenStream("renyi", new StringReader(value.toString()));
-                CharTermAttribute cta = stream.addAttribute(CharTermAttribute.class);//保存响应词汇
-                //在lucene 4 以上  要加入reset 和  end方法
-                stream.reset();
-
-                Configuration conf = context.getConfiguration();
-                String uri = tmpFilePath + "/" + fileName + "-" + className;
-
-                FileSystem fs1 = FileSystem.newInstance(URI.create(uri), conf);
-                FSDataOutputStream out = null;
-                Path path = new Path(uri);
-                if (fs1.exists(path)) {
-                    out = fs1.append(new Path(uri));
-                } else {
-                    out = fs1.create(new Path(uri));
-                }
-
-                while (stream.incrementToken()) {
-                    String s = cta.toString();
-                    label.set(s + ":" + fileName);
-                    context.write(label, one);
-                    out.writeChars(s + " ");
-                }
-                stream.end();
-                stream.close();
-                out.close();
-                fs1.close();
-            }
-
-            private String getInputSplitFileName(InputSplit inputSplit) {
-                String fileFullName = ((FileSplit) inputSplit).getPath().toString();
-                String[] nameSegments = fileFullName.split("/");
-                return nameSegments[nameSegments.length - 1];
-            }
-
-            private String getInputSplitClass(InputSplit inputSplit) {
-                String fileFullName = ((FileSplit) inputSplit).getPath().toString();
-                String[] nameSegments = fileFullName.split("/");
-                String name = nameSegments[nameSegments.length - 2];
-                return classMap.get(name);
-            }
-
-        }
-
-        public static class SkipWordsReducer extends Reducer<Text, Text, Text, Text> {
-            private int idx = 0;
-
-            @Override
-            protected void reduce(Text key, Iterable<Text> values,
-                                  Reducer<Text, Text, Text, Text>.Context context)
-                    throws IOException, InterruptedException {
-                if (values == null) {
-                    return;
-                }
-                idx++;
-                context.write(key, new Text(String.valueOf(idx)));
-            }
-        }
-    */
     public static class MyStopAnalyzer extends Analyzer {
         private Set stops;
 
@@ -170,7 +56,6 @@ public class SkipWords {
             CharArraySet charArraySet = CharArraySet.copy(stops);
             return new TokenStreamComponents(source, new StopFilter(source, charArraySet));
         }
-
     }
 
     private static void writePureFile(String inputPath, String outputPath, Analyzer analyzer) throws FileNotFoundException, IOException {
@@ -185,14 +70,27 @@ public class SkipWords {
         FSDataInputStream in = fsin.open(new Path(inputPath));
         Scanner scan = new Scanner(in);
         TokenStream stream = null;
-        while (scan.hasNext()) {
-            String s = scan.next();
+        int cnt = 0;
+        String[] filterStrs = {"Xref", "Path", "From", "Message-ID", "Date", "Article-I.D.", "References", "Lines", "Expires", "Last-update"};
+        while (scan.hasNextLine()) {
+            String s = scan.nextLine();
+            Boolean skip = false;
+            for (String filter : filterStrs) {
+                if (s.startsWith(filter)) {
+                    skip = true;
+                    break;
+                }
+            }
+            if (skip) {
+                continue;
+            }
             stream = analyzer.tokenStream("renyi", new StringReader(s));
             CharTermAttribute cta = stream.addAttribute(CharTermAttribute.class);//保存响应词汇
             stream.reset();
             while (stream.incrementToken()) {
                 String s1 = cta.toString();
-                out.writeChars(s1 + '\n');
+                out.write((s1 + "\n").getBytes("utf-8"),0,(s1 + "\n").getBytes("utf-8").length);
+                cnt++;
             }
             stream.end();
             stream.close();
@@ -202,6 +100,7 @@ public class SkipWords {
         out.close();
         fsin.close();
         fsout.close();
+        System.out.println(outputPath + "\t" + cnt);
     }
 
     private static Analyzer readStopWords(String stopWordsPath) throws FileNotFoundException, IOException {
@@ -227,11 +126,13 @@ public class SkipWords {
     public static void main(String[] args) throws Exception {
         String inputPath = "/task3/emails";
         String stopWordsPath = "/task3/Stop_words.txt";
-        String outputPath = "/task3/purefile-out";
-        if (args.length >= 3) {
+        String outputPath = "/task3/purefiles";
+        String classMapPath = "/task3/classMap.txt";
+        if (args.length >= 4) {
             inputPath = args[0];
             stopWordsPath = args[1];
             outputPath = args[2];
+            classMapPath = args[3];
         } else {
             System.out.println("args error");
             System.exit(-1);
@@ -246,6 +147,21 @@ public class SkipWords {
         Path[] listPath = FileUtil.stat2Paths(fs);
         System.out.println("Hello ---------------------------------");
         System.out.println(listPath.length);
+
+        int cnt = 0;
+        FileSystem fsout = FileSystem.newInstance(configuration);
+        FSDataOutputStream out = fsout.create(new Path(classMapPath));
+        for (Path p : listPath) {
+            String[] nameSegments = p.toString().split("/");
+            String className = nameSegments[nameSegments.length - 1];
+            ++cnt;
+            classMap.put(className, String.valueOf(cnt));
+            String s = className + "\t" + cnt + "\n";
+            out.write(s.getBytes("utf-8"),0, s.getBytes("utf-8").length);
+        }
+        out.close();
+        fsout.close();
+
         for (Path p : listPath) {
             FileStatus[] fs1 = hdfs.listStatus(p);
             Path[] listPath1 = FileUtil.stat2Paths(fs1);
