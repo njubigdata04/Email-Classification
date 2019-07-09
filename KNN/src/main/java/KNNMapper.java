@@ -12,7 +12,7 @@ import java.util.List;
 
 public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWritable> {
     private List<Instance> trainList = new ArrayList<>();
-    private static int K = 10;
+    private static int K = 20;
 
     private static final Log LOG = LogFactory.getLog(KNNMapper.class);
 
@@ -78,7 +78,7 @@ public class KNNMapper extends Mapper<LongWritable, Text, LongWritable, ListWrit
         for (DoubleWritable d : trainLable){
             lables.push(d);
         }
-        context.write(new LongWritable(lables.toString().length()), lables);
+        context.write(textIndex, lables);
         //context.write(new LongWritable(testInstance.getCategory()), lables);
     }
 }

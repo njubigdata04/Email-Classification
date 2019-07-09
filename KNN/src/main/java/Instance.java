@@ -1,13 +1,14 @@
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 public class Instance {
     // Instance contains a sparse matrix which represents the features of a email instance
     private Integer category;
-    private List<Pair<Integer, Double>> attributes = new ArrayList<Pair<Integer, Double>>();
+    private List<Pair<Integer, Double>> attributes = new ArrayList<>();
 
     public Instance(String line){
         String[] list = line.split(" ");
@@ -28,7 +29,7 @@ public class Instance {
     }
 
     private void sortByFeature(){
-        attributes.sort(new FeatureComparator());
+        Collections.sort(attributes, new FeatureComparator());
     }
 
     private class FeatureComparator implements Comparator<Pair<Integer, Double>> {

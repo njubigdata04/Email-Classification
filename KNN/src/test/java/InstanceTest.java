@@ -1,4 +1,4 @@
-import javafx.util.Pair;
+import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 
 import java.util.List;
