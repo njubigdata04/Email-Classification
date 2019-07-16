@@ -57,8 +57,6 @@
 	\item \lstinline{\keywords}：为摘要环境添加关键词。
 \end{enumerate}
 
-
-
 \subsection{列表环境}
 你可以使用列表环境（\lstinline{itemize}、\lstinline{enumerate}、\lstinline{description}），示例如下：\\[2ex]
 \begin{minipage}[c]{0.59\linewidth}
@@ -149,8 +147,6 @@
 
 
 \subsection{参考文献}
-此模板使用了 Bib\TeX{} 来生成参考文献，默认使用的文献样式（bib style）是 \lstinline{GB/T 7714-2015}\footnote{通过调用 \href{https://ctan.org/pkg/gbt7714}{\lstinline{gbt7714}} 宏包}。参考文献示例：~\cite{en3} 使用了中国一个大型的 P2P 平台（人人贷）的数据来检验男性投资者和女性投资者在投资表现上是否有显著差异。
-
 你可以在谷歌学术，Mendeley，Endnote 中获得文献条目（bib item），然后把它们添加到 \lstinline{wpref.bib} 中。在文中引用的时候，引用它们的键值（bib key）即可。注意需要在编译的过程中添加 Bib\TeX{} 编译。如果你想在参考文献中添加未引用的文献（部分或者全部），可以使用
 
 \begin{lstlisting}
@@ -170,7 +166,30 @@
 \end{lstlisting}
 
 \section{数据分析}
-共有20个类别，20000个文件.....
+对于训练数据，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数为：\par
+\begin{table}[htbp]
+  \small
+  \centering
+  \caption{Auto MPG and Price \label{tab:reg}}
+    \begin{tabular}{lcc|lcc}
+    \toprule
+    类别编号  &   类别名称  &   包含邮件文本个数  &   类别编号  & 类别名称  & 包含邮件文本个数  \\
+    \hline
+    1 & sci.electronics & 1000            & 11 & rec.sport.baseball & 1000 \\
+    2 & comp.windows.x & 1000             & 12 & rec.autos & 1000 \\
+    3 & talk.politics.mideast & 1000      & 13 & talk.politics.misc & 1000 \\
+    4 & comp.os.ms-windows.misc & 1000    & 14 & talk.politics.guns & 1000 \\
+    5 & rec.sport.hockey & 1000           & 15 & comp.graphics & 1000 \\
+    6 & sci.crypt & 1000                  & 16 & soc.religion.christian & 997 \\
+    7 & comp.sys.mac.hardware & 1000      & 17 & rec.motorcycles & 1000 \\
+    8 & sci.space & 1000                  & 18 & misc.forsale & 1000 \\
+    9 & talk.religion.misc & 1000         & 19 & sci.med & 1000 \\
+    10 & comp.sys.ibm.pc.hardware & 1000  & 20 & alt.atheism & 1000 \\
+    \bottomrule
+    \end{tabular}%
+\end{table}%\
+可以看到，训练样本全集共有20个类别，训练样本总数为19997个，每个类别下训练样本的数量是平衡的，几乎都是1000个，因此在进行训练时，不需要考虑类别不平衡问题。
+
 
 \section{MapReduce处理流程}
 \subsection{特征选择}
