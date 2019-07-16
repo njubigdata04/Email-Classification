@@ -363,7 +363,7 @@ $$
 \begin{algorithm}[htb]
   \caption{朴素贝叶斯训练阶段第一个Job}
   \label{alg:Framwork}
-  \begin{algorithmic}
+  \begin{algorithmic}[1]
     \Require
     邮件训练样本全集 $U$
     \Ensure
@@ -387,7 +387,7 @@ $$
 \begin{algorithm}[htb]
   \caption{朴素贝叶斯预测阶段第二个Job}
   \label{alg:Framwork}
-  \begin{algorithmic}
+  \begin{algorithmic}[1]
     \Require
     第一个Job训练结果键值对集合$<>$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
     \Ensure
