@@ -176,49 +176,86 @@
 \subsection{特征选择}
 本任务的主要工作是对原始的邮件文本中进行特征选择，选择出能够表征邮件主题的特征词，为后续的文本分类做准备。\par
 对于输入的未分词的邮件训练样本全集和停词表，我们需要输出全局邮件文本特征，并对它们进行相应的编号，此外，对于训练数据集的目录，将目录名（即文本类别）转换为相应的类别序号。\par
-对于该步骤，我们采用了两种计算方法，分别为非并行化和并行化计算方法。
-\subsubsection{非并行化计算方法}
-非并行化计算方法主要思路是顺序执行，首先读取20\_newsgroup文件夹下的子文件夹，将子文件夹名（即类别名）转化为类编号并进行存储。将 Lucene 的 Standard Analyzer 分词器作为基类，输入停词表，自定义自己的带有停词表功能的停词器，然后顺序依次读取每个子文件夹下的所有文件，使用自定义的停词器对文本进行分词，并将分词结果储存在目标文件中。为了后续处理的方便性，我们修改输出文件的格式为：filename-classNum，filename为原文件的文件名，classNum为它所属的类别的编号，两者用分隔符 '-' 隔开。\par
+对于该步骤，我们采用了两种计算方法，分别为半并行化和并行化计算方法。
+\subsubsection{半并行化计算方法}
+半并行化计算方法是指将该任务划分为两个步骤，第一步读取训练样本全集和停词表，生成干净文本；第二步读取干净文本，生成全局邮件特征集。\par
+第一步的主要思路是顺序执行，首先读取20\_newsgroup文件夹下的子文件夹，将子文件夹名（即类别名）转化为类编号并进行存储。将 Lucene 的 Standard Analyzer 分词器作为基类，输入停词表，自定义自己的带有停词表功能的停词器，然后顺序依次读取每个子文件夹下的所有文件，使用自定义的停词器对文本进行分词，并将分词结果储存在目标文件中，我们将分词后的文本称为干净文本，生成干净文本的过程是顺序执行，非并行化的。为了后续处理的方便性，我们修改输出文件的格式为：filename-classNum，filename为原文件的文件名，classNum为它所属的类别的编号，两者用分隔符 '-' 隔开。\par
 伪代码如下：
 \begin{algorithm}[htb]  
-  \caption{特征选择非并行化算法}  
+  \caption{特征选择半并行化算法：第一步}  
   \label{alg:Framwork}
-  \begin{algorithmic}  
+  \begin{algorithmic}[1]
     \Require
     邮件训练样本全集 $U$，停词表 $S$
     \Ensure
-    用停词表分割后的干净文本，全局邮件文本特征集
+    用停词表分割后的干净文本
     \State 初始化类别名-类别编号对应表 classMap
     \State 初始化停词器 stopAnalyzer=StopAnalyzer($S$)
       \For{each 文本 $u$ in $U$}
-      \State 新文本 $u\prime$ = stopAnalyzer(u)
+      \State 新文本 $u^\prime$ = stopAnalyzer(u)
       \State 通过类别名-编号对应表查找文本$u$的文件名filename对应的类别编号num=classMap($u$)
-      \State 在目标目录下创建filename-num文件，并将新文本$u\prime$的内容写入该文件。
+      \State 在目标目录下创建filename-num文件，并将新文本$u^\prime$的内容写入该文件。
    \EndFor
-  \end{algorithmic}  
+  \end{algorithmic}
+\end{algorithm}
+第二步从干净文本中提取全局邮件文本特征集的过程是并行化的，使用MapReduce并行计算框架，在Map阶段读取干净文本，对于每一个单词word，发射(word,1)键值对。在Reduce阶段，设置一个全局缓存变量$n$，为每个单词维护一个编号，并将每个单词和相应的编号输出到全局邮件特征集中。\par
+伪代码如下：
+\begin{algorithm}[htb]  
+  \caption{特征选择半并行化算法：第二步}  
+  \label{alg:Framwork}
+  \begin{algorithmic}[1]
+    \Require
+    干净文本 $U^\prime$
+    \Ensure
+    \State \textbf{Map阶段}：
+    \Function {map}{$filename$, $text$}
+      \For{each word $w$ in $text$}
+        \State Emit($w$,$1$)
+      \EndFor
+    \EndFunction
+    \State \textbf{Reduce阶段}：
+    \Function {reduce}{$word$, $value$}
+      \State 全局缓存变量$num=num+1$
+      \State 将$word$和$num$写入到全局邮件文本特征集中
+      \State Emit($word$,$value$)
+    \EndFunction
+  \end{algorithmic}
 \end{algorithm}
 
 \subsubsection{并行化计算方法}
 非并行化顺序执行，缺点也显而易见：计算速度慢，效率低，因此我们设计了并行化的计算方法，利用 MapReduce 计算框架，很好地并行处理大量的训练文本，极大地加快了处理速度。\par
 在Map阶段读取原文本，利用停词器将其分词后输出到目标目录下，同时对于每一个单词，发射(word,filename-classNum)键值对。值得注意的是，因为停词表是所有Mapper都需要各自初始化的，因此将其初始化放在Map阶段的setup过程中，首先将停词表文件路径存在DistributedCache中，然后在setup过程中读取该路径并利用其初始化停词器，在map过程中使用该停词器。\par
-在Reduce阶段，设置一个全局变量$n$，用来表示每一个单词的唯一标号。输入为(word, value)。由于在Reduce阶段，已经将相同key的键值对都整合到了一起，因此读取的word值是唯一不重复的，只需要利用全局变量$n$为每一个单词分配相应的标号，并将单词和编号输出到目标文件中即可。\par
+在Reduce阶段，设置一个全局缓存变量$n$，用来表示每一个单词的唯一标号。输入为(word, value)。由于在Reduce阶段，已经将相同key的键值对都整合到了一起，因此读取的word值是唯一不重复的，只需要利用全局变量$n$为每一个单词分配相应的标号，并将单词和编号输出到目标文件中即可。\par
 伪代码如下：
 \begin{algorithm}[htb]  
   \caption{特征选择并行化算法}  
   \label{alg:Framwork}
-  \begin{algorithmic}  
+  \begin{algorithmic}[1]
     \Require
     邮件训练样本全集 $U$，停词表 $S$
     \Ensure 
     用停词表分割后的干净文本，全局邮件文本特征集
     \State 初始化类别名-类别编号对应表 classMap
+    \State 将停词表$S$ 存入DistributedCache中
+    \State \textbf{Map阶段}：
+    \Function {setup}{}
+    \State 从DistributedCache中读取停词表$S$
     \State 初始化停词器 stopAnalyzer=StopAnalyzer($S$)
-      \For{each 文本 $u$ in $U$}
-      \State 新文本 $u\prime$ = stopAnalyzer(u)
-      \State 通过类别名-编号对应表查找文本$u$对应的类别编号$n$=classMap($u$)
-      \State 在目标目录下创建文件filename-num文件，并将新文本$u\prime$的内容写入该文件。
-   \EndFor
-  \end{algorithmic}  
+    \EndFunction
+    \Function {map}{$filename$, $text$}
+      \State $text^\prime$ = stopAnalyzer($text$)
+      \State 将$text^\prime$写入到目标干净文本中
+      \For{each word $w$ in $text^\prime$}
+        \State Emit($w$,$filename$)
+      \EndFor
+    \EndFunction
+    \State \textbf{Reduce阶段}：
+    \Function {reduce}{$word$, $value$}
+      \State 全局缓存变量$num=num+1$
+      \State 将$word$和$num$写入到全局邮件文本特征集中
+      \State Emit($word$,$filename$)
+    \EndFunction
+  \end{algorithmic}
 \end{algorithm}
 
 
