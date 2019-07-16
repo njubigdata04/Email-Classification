@@ -23,9 +23,9 @@ public class Main {
             job.setOutputValueClass(DoubleWritable.class);
             job.setMapOutputKeyClass(LongWritable.class);
             job.setMapOutputValueClass(ListWritable.class);
-            job.addCacheFile(new Path("/cache.txt").toUri());
+            job.addCacheFile(new Path("/user/2019st04/cache.txt").toUri());
 
-            System.out.println(new Path("/cache.txt").toUri().toString());
+            //System.out.println(new Path("/cache.txt").toUri().toString());
 
             job.setNumReduceTasks(1);
 
