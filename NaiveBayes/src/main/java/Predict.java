@@ -4,10 +4,23 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.htrace.commons.logging.Log;
+import org.apache.htrace.commons.logging.LogFactory;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Predict {
+
     //URI stopPath = new URI(args[0]);
     public static void main(String[] args) throws Exception {
         String classPath = args[0];
@@ -27,8 +40,8 @@ public class Predict {
         FileInputFormat.setInputDirRecursive(predictJob, true);
         //impliment by hadoop+
         predictJob.setMapperClass(Bayes.PredictMapper.class);
-        predictJob.setCombinerClass(Bayes.PredictCombiner.class);
-        predictJob.setPartitionerClass(Bayes.PredictPartition.class);
+        //predictJob.setCombinerClass(Bayes.PredictCombiner.class);
+        //predictJob.setPartitionerClass(Bayes.PredictPartition.class);
         predictJob.setReducerClass(Bayes.PredictReducer.class);
         FileOutputFormat.setOutputPath(predictJob, new Path(outputPath));
         predictJob.setOutputKeyClass(Text.class);

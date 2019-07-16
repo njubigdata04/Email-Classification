@@ -190,7 +190,8 @@ public class Bayes {
                     wordcount += TrainSet.get(k);
                 }
                 double result = wordcount / (sumClass + sumWord);
-                context.write(new Text(filename + "#" + currentClass), new Text(Double.toString(result)));
+                //context.write(new Text(filename + "#" + currentClass), new Text(Double.toString(result)));
+                context.write(new Text(filename), new Text(currentClass + "#" + Double.toString(result)));
             }
 
         }
@@ -210,7 +211,8 @@ public class Bayes {
             double sum = 1;
             for (Text v : values) {
                 String line = v.toString();
-                double number = Double.parseDouble(line);
+                //double number = Double.parseDouble(line);
+                double number = Double.parseDouble(line.split("#")[1]);
                 sum *= number;
             }
             context.write(key, new Text(Double.toString(sum)));
@@ -231,6 +233,7 @@ public class Bayes {
         private Map<String, Double> MapResult = new HashMap<String, Double>();
         private String CurrentFile = "";
         private double SumFile = 0;
+        private int Correct = 0;
         //private Map<String, Integer> TrainSet = new HashMap<>();
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -277,7 +280,43 @@ public class Bayes {
             }
             //context.write(key, V);
             return;*/
-            String[] parts = key.toString().split("#");
+            MapResult.clear();
+            String filename = key.toString();
+            String classname = "";
+            //保存所有的类
+            for(Text value: values){
+                String[] parts = value.toString().split("#");
+                classname = parts[0];
+                double v = Double.parseDouble(parts[1]);
+                double number = 0;
+                if (MapResult.containsKey(classname))
+                    number = MapResult.get(classname);
+                else if(ClassSet.containsKey(classname))
+                    number = ClassSet.get(classname) / SumFile;
+                else
+                {
+                    System.out.println("/****************\n" + classname + "\n" + SumFile);
+                    number = ClassSet.get(classname) / SumFile;
+                }
+                number *= v;
+                MapResult.put(classname, number);
+            }
+            //找出最大的类
+            double max = 0;
+            String cn = "No find";
+            for(Map.Entry<String, Double> entry:MapResult.entrySet()){
+                double count = entry.getValue();
+                if (count > max) {
+                    cn = entry.getKey();
+                    max = count;
+                }
+            }
+            context.write(new Text(filename), new Text(cn));
+            MapResult.clear();
+            String[] sp = filename.split("-");
+            if(sp[1].equals(cn))
+                Correct++;
+            /*String[] parts = key.toString().split("#");
             String filename = parts[0];
             String classname = parts[1];
             if (CurrentFile.equals("")) {//第一个进入
@@ -312,11 +351,11 @@ public class Bayes {
                 double tmp = Double.parseDouble(v.toString());
                 number*=tmp;
             }
-            MapResult.put(classname, number);
+            MapResult.put(classname, number);*/
         }
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException{
-            double max = 0;
+            /*double max = 0;
             String cn = "";
             for (Map.Entry<String, Double> entry : MapResult.entrySet()) {
                 double count = entry.getValue();
@@ -326,7 +365,8 @@ public class Bayes {
                 }
             }
             context.write(new Text(CurrentFile), new Text(cn));
-            MapResult.clear();
+            MapResult.clear();*/
+            context.write(new Text("Correct"), new Text(Integer.toString(Correct)));
         }
     }
 

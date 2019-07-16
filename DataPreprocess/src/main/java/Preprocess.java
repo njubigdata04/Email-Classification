@@ -46,8 +46,9 @@ public class Preprocess {
             String[] sp = filenameclassword.split(":");
             String word = sp[1];
             if(!WordNum.containsKey(word)){
-                System.out.println("Wrong reading word in input file!" + word + "in" + filenameclassword);
-                System.exit(-1);
+                System.out.println("No matched word in input file!" + word + "in" + filenameclassword);
+                //System.exit(-1);
+                continue;
             }
             Integer wordno = WordNum.get(word);
             String fileclass = sp[0];
@@ -62,7 +63,9 @@ public class Preprocess {
         for(Map.Entry<String, ArrayList<String>>entry : MapResult.entrySet()){
             String fn = entry.getKey();
             //System.out.println(fn);
-            out.writeChars(fn.split("-")[1]);
+            String tmp_fn = fn.split("-")[1];
+            //out.writeChars(fn.split("-")[1]);
+            out.write(tmp_fn.getBytes("utf-8"),0,  tmp_fn.getBytes().length);
             ArrayList<String> re = entry.getValue();
             for(String part:re){
                 //out.writeChars(" "+ part);
