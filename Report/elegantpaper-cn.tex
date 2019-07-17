@@ -299,7 +299,14 @@ $$\mathrm{tf{}idf_{i,j}} = \mathrm{tf_{i,j}} \times  \mathrm{idf_{i}}$$
 某一特定文件内的高词语频率，以及该词语在整个文件集合中的低文件频率，可以产生出高权重的TF-IDF。因此，TF-IDF倾向于过滤掉常见的词语，保留重要的词语。
 
 \subsection{Hadoop MapReduce 实现}
-由于TF-IDF设计到TF和IDF两种不同指标的计算，所以所有计算难以直接在一个job中完成。我们通过分解，将其划分为三个Job，分别对应于计算的三个阶段：TF计算（TF-Job），IDF计算（IDF-Job）和TF、IDF相乘的整合阶段（Integrate-Job）。\par
+由于TF-IDF设计到TF和IDF两种不同指标的计算，所以所有计算难以直接在一个job中完成。我们通过分解，将其划分为三个Job，分别对应于计算的三个阶段：TF计算（TF-Job），IDF计算（IDF-Job）和TF、IDF相乘的整合阶段（Integrate-Job）。
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.6\textwidth]{tfidf_framework.png}
+	\caption{TF-IDF算法框架 \label{fig:tfidf_framework}}
+\end{figure}
+
 \subsubsection{TF-Job}
 在TF Job中，主要任务是统计每个文件所有单词个数以及每个单词的出现次数，并计算每个单词在每个文件中的出现比例。\par
 在Map阶段，读取在上个任务中生成的干净文本，输入为(文件名filenanme-文本内容text)键值对，对于每一个单词word，发射(word:filename, 1)键值对，同时文本单词数量计数器count加一，当整个文本遍历完成后，发射(!:count)键值对。值得注意的是，我们还需要自定义Partitioner，因为我们希望传入Reducer的数据按文件名排序（即key中':'后面的字符串），所以在自定义Partitioner中需要分割key并取':'后面的filename作为划分和排序标准。\par
