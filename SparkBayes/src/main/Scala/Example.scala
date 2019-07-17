@@ -10,11 +10,11 @@ import org.apache.spark.sql.{Row, SparkSession}
 object Example {
   def main(args: Array[String]) {
 
-    //val inputpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/purefiles"
+    val inputpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/purefiles"
     //val inputFile =  "file:///D:/课程学习/大三下/大数据实验/task3/file1.txt"
-    val inputpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/simple"
-    //val testpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/testpurefiles/purefiles"
-    val testpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/simple"
+    //val inputpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/simple"
+    val testpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/testpurefiles/purefiles"
+    //val testpath = "file:///D:/课程学习/大三下/大数据实验/task3/dataset/simple"
 
     val sparkSession = SparkSession.builder().appName("NaiveBayes").master("local").getOrCreate()
     val sc = sparkSession.sparkContext
@@ -44,7 +44,7 @@ object Example {
 
     //分好的词转成数组
     var tokenizer = new Tokenizer().setInputCol("text").setOutputCol("words")
-    var hashingTF = new HashingTF().setInputCol("words").setOutputCol("rawFeatures").setNumFeatures(10000)
+    var hashingTF = new HashingTF().setInputCol("words").setOutputCol("rawFeatures").setNumFeatures(5000)
     var idf = new IDF().setInputCol("rawFeatures").setOutputCol("features")
 
     val pipeline = new Pipeline()setStages(Array(tokenizer,hashingTF,idf))
@@ -68,16 +68,24 @@ object Example {
         LabeledPoint(label.toDouble - 1, Vectors.dense(features.toArray))
     }
 
-    testDataRdd.show(false)
+    //testDataRdd.show(false)
 
 
     //val model = new NaiveBayes().setFeaturesCol("features").setModelType("multinomial").fit(trainDataRdd)
     //model.save("file:///D:/课程学习/大三下/大数据实验/task3/dataset/multinomialmodelhash100000")
-    val model = NaiveBayesModel.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/multinomialmodelhash100000")
+    val model = NaiveBayesModel.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/multinomialmodelhash50000")
     val testpredictionAndLabel = model.transform(testDataRdd)
     testpredictionAndLabel.show(false)
-    //val result = testpredictionAndLabel.select()
-    //val metric = new MulticlassMetrics()
+    val rddresult = testpredictionAndLabel.select($"prediction", $"label").rdd
+    val re = rddresult.map{case (line)=>(line(0).toString.toDouble, line(1).toString.toDouble)}
+    println("RDD")
+    re.take(4).foreach(println)
+    val metric = new MulticlassMetrics(re)
+    println("test accuracy" + metric.accuracy)
+    for (i <- 0 to 19) println("test label " + i + " recall" + metric.recall(i))
+    for (i <- 0 to 19) println("test label" + i + " precision" + metric.precision(i))
+
+
     val evaluator = new MulticlassClassificationEvaluator()
       .setLabelCol("label")
       .setPredictionCol("prediction")
