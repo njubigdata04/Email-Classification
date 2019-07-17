@@ -2,22 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2ac274d8-d6c8-4f95-9749-31f9e73ecd2c" name="Default Changelist" comment="BjyUpdateLogPredict">
-      <change afterPath="$PROJECT_DIR$/.idea/Email-Classification.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ElegantPaper-master/elegantpaper-cn.pdf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ElegantPaper-master/elegantpaper-cn.tex" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/NaiveBayes/src/main/java/LogPredict.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SparkBayes/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SparkBayes/src/main/Scala/Example.scala" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SparkBayes/src/main/Scala/NaiveBayes.scala" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DataPreprocess/src/main/java/Preprocess.java" beforeDir="false" afterPath="$PROJECT_DIR$/DataPreprocess/src/main/java/Preprocess.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/NaiveBayes/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/NaiveBayes/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/NaiveBayes/src/main/java/Bayes.java" beforeDir="false" afterPath="$PROJECT_DIR$/NaiveBayes/src/main/java/Bayes.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/NaiveBayes/src/main/java/Predict.java" beforeDir="false" afterPath="$PROJECT_DIR$/NaiveBayes/src/main/java/Predict.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Report/elegantpaper-cn.tex" beforeDir="false" afterPath="$PROJECT_DIR$/Report/elegantpaper-cn.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SparkBayes/src/main/Scala/Example.scala" beforeDir="false" afterPath="$PROJECT_DIR$/SparkBayes/src/main/Scala/Example.scala" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -29,7 +14,7 @@
     <session id="-9936630">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="3" />
+          <entry key="project.closed" value="4" />
           <entry key="project.open.time.1" value="3" />
           <entry key="project.open.time.3" value="1" />
           <entry key="project.opened" value="4" />
@@ -369,7 +354,7 @@
       <workItem from="1561964130266" duration="9142000" />
       <workItem from="1562132688161" duration="1281000" />
       <workItem from="1562330759603" duration="1132000" />
-      <workItem from="1563258974771" duration="4861000" />
+      <workItem from="1563258974771" duration="5512000" />
     </task>
     <task id="LOCAL-00001" summary="DataPreprocess">
       <created>1562330842246</created>
@@ -389,7 +374,16 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="16416000" />
+    <option name="totallyTimeSpent" value="17067000" />
+  </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
@@ -407,7 +401,7 @@
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.32991204" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.32991204" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
