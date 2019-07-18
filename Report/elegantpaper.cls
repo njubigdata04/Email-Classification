@@ -271,6 +271,7 @@
 \renewcommand{\algorithmicrequire}{\textbf{Input:}}  % Use Input in the format of Algorithm  
 \renewcommand{\algorithmicensure}{\textbf{Output:}} % Use Output in the format of Algorithm  
 
-
+\usepackage{listings}
+\usepackage{xcolor}
 
 
