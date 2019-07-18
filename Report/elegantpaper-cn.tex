@@ -471,8 +471,11 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)}{\sum_{w \in v}count(w, C_{k})}$$
 需要考虑特殊情况某一类的文档不包含某个词时，考虑add-one-smoothing，类似于拉普拉斯修正，其实就是将“出现次数加一”。此时似然函数变为：
 $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+1)}=\frac{count(w_i, C_k)+1}{\sum_{w \in v}count(w, C_{k})+|V|}$$
 其中$|V|$表示词库的单词数。
+\subsubsection{Hadoop的实现}
+在Hadoop MapReduce的实现中分成了两个Job来完成，分别是训练阶段的Job和预测阶段的Job。
 
-在Hadoop MapReduce的实现中分成了两个Job来完成，分别是训练阶段的Job和预测阶段的Job
+两个Job的伪代码实现如下。
+
 \begin{algorithm}[htb]
   \caption{朴素贝叶斯训练阶段第一个Job}
   \label{alg:Framwork}
@@ -482,52 +485,119 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
     \Ensure
     输出训练结果文件，记录键值对<类名\#单词，数量>
     \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
-    \For{each 单词 $w$ in $U$}
-      \State 类名编号$classnum = GetClassNum(GetFileName(w))$
-      \State Emit($classnum + "\#" + w$, 1)
-   \EndFor
-	\State Combine阶段：合并<类名\#单词，num1>、<类名\#单词，num2>为<类名\#单词，num1+num2>
-    \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
-    \State sum = 0
-	\For{all <类名\#单词，数量num> with same key}
-      \State 类名编号$sum += num$
+    \Function {map}{$offset$, $text$}
+      \For{each 单词 $w$ in $text$}
+        \State 类名编号$classnum = GetClassNum(GetFileName(w))$
+        \State Emit($classnum + "\#" + w$, 1)
+      \EndFor
+   \EndFunction
 
-   \EndFor
-	\State Emit(类名\#单词, sum)
+	\State Combine阶段：合并<类名\#单词，num1>、<类名\#单词，num2>为<类名\#单词，num1+num2>
+  \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
+  \Function {reduce}{$key$, $values$}
+    \State sum = 0
+    \For{value in values}
+        \State $sum += value$
+    \EndFor
+    \State Emit(key, sum)
+  \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}[htb]
-  \caption{朴素贝叶斯预测阶段第二个Job}
+  \caption{朴素贝叶斯预测阶段第二个Job的Map阶段}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
     \Require
-    第一个Job训练结果键值对集合$<>$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
+    第一个Job训练结果键值对集合$A$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
     \Ensure
     输出训练结果文件，记录键值对<类名\#单词，数量>
-    \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
-	\State Map阶段setup：将训练结果$A$键值对保存到Map<String, int>结构的TrainSet中，并提取键值对<类名\#单词，数量>中的单词存入词库WordSum中
-	\State Map阶段setup：将对应关系$B$保存到Map<String, int>结构的ClassSet中
-	\State Map阶段map：
-    \For{each 单词 $w$ in $U$}
+  \State Map<String, int> TrainSet
+  \State Map<String, int> ClassSet
+  \State Set<String> WordSum    //记录词库
+  \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
+  \Function {setup}{$A$, $B$}
+    \For{(key, value) in A}
+      \State TrainSet.put(key, value)
+      \State WordSum.add(key.GetWord())
+    \EndFor
+    \For{(key, value) in B}
+      \State ClassSet.put(key, value)
+    \EndFor
+  \EndFunction
+  \Function {map}{$offset$, $text$}
+    \For{each 单词 $w$ in $text$}
       \State 类名编号$classnum = GetClassNum(GetFileName(w))$
-		\For{each 类别 $c$ in ClassSet.keys}
-      		\State 类名编号$classnum = GetClassNum(GetFileName(w))$
-      		\State Emit($classnum + "\#" + w$, 1)
-   			\EndFor
+      \For{each 类别 $c$ in ClassSet.keys}
+        \State key = c + "\#" + word;
+        \State wordcount = 1 + TrainSet.get(key);//类中对应的词数
+        \State sumClass = TrainSet.get(currentClass);//类对应的单词总数
+        \State sumWord = WordSum.size(); //词库中词数量
+        \State result = log(wordcount / (sumClass + sumWord));
+        \State Emit(filename, currentClass + "\#" + result);
+   		\EndFor
       \State Emit($classnum + "\#" + w$, 1)
    \EndFor
+  \EndFunction
 	\State Combine阶段：合并<类名\#单词，num1>、<类名\#单词，num2>为<类名\#单词，num1+num2>
-    \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
-    \State sum = 0
-	\For{all <类名\#单词，数量num> with same key}
-      \State 类名编号$sum += num$
-
-   \EndFor
-	\State Emit(类名\#单词, sum)
   \end{algorithmic}
 \end{algorithm}
 
+\begin{algorithm}[htb]
+  \caption{朴素贝叶斯预测阶段第二个Job的Reduce阶段}
+  \label{alg:Framwork}
+  \begin{algorithmic}[1]
+    \Require
+    第一个Job训练结果键值对集合$A$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
+    \Ensure
+    输出训练结果文件，记录键值对<类名\#单词，数量>
+  \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
+  \State Map<String, int> ClassSet
+  \State SumFile
+  \Function {setup}{$B$}
+    \For{(key, value) in B}
+      \State ClassSet.put(key, value)
+      \State SumFile += value
+    \EndFor
+  \EndFunction
+  \Function {reduce}{$key$, $value$}
+    \State Map<String, double> MapResult
+    \For{value in values}
+        \State 类名编号classno = value.GetClassNum
+        \State number = value.GetNum()
+        \If{MapResult.contains(classno)}
+          \State number += MapResult(classno)
+        \Else
+          \State number += log(ClassSet.get(classname) / SumFile)
+        \EndIf  
+        MapResult.put(classno, number)
+    \EndFor
+    \State MaxClass = Max(MapResult) // 找到数值最大对应的类编号
+    \State Emit(key, MaxClass) // 输出结果
+  \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+
+\section{Spark实现}
+\subsection{简介}
+ml和mllib都是Spark中的机器学习库，目前常用的机器学习功能2个库都能满足需求。
+spark官方推荐使用ml, 因为ml功能更全面更灵活，未来会主要支持ml，mllib很有可能会被废弃(据说可能是在spark3.0中deprecated）。
+
+两者的不同在于ml主要操作的是DataFrame, 而mllib操作的是RDD，也就是说二者面向的数据集不一样。相比于mllib在RDD提供的基础操作，ml在DataFrame上的抽象级别更高，数据和操作耦合度更低。
+
+DataFrame是Dataset的子集，也就是Dataset[Row], 而DataSet是对RDD的封装，对SQL之类的操作做了很多优化。
+相比于mllib在RDD提供的基础操作，ml在DataFrame上的抽象级别更高，数据和操作耦合度更低。
+ml中的操作可以使用pipeline, 跟sklearn一样，可以把很多操作(算法/特征提取/特征转换)以管道的形式串起来，然后让数据在这个管道中流动。大家可以脑补一下Linux管道在做任务组合时有多么方便。
+ml中无论是什么模型，都提供了统一的算法操作接口，比如模型训练都是fit；不像mllib中不同模型会有各种各样的trainXXX。
+mllib在spark2.0之后进入维护状态, 这个状态通常只修复BUG不增加新功能。
+
+\subsection{数据预处理：特征提取}
+第一步:分词处理
+
+\subsection{朴素贝叶斯}
+
+\subsection{SVM}
 
 
 \end{document}
