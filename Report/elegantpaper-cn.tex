@@ -593,8 +593,37 @@ ml中无论是什么模型，都提供了统一的算法操作接口，比如模
 mllib在spark2.0之后进入维护状态, 这个状态通常只修复BUG不增加新功能。
 
 \subsection{数据预处理：特征提取}
-第一步:分词处理
+第一步：读取原文本转换成DataFrame
 
+第二步:分词处理
+
+第三步：将单词转换成对应的矩阵
+
+根据官方文档API，FeatureHasher的作用是将一组分类或数字特征投影到指定尺寸的特征向量中（通常远小于原始特征空间的特征向量）。这是使用散列技巧将要素映射到特征向量中的索引来完成的。
+
+其中特征列每列可能包含数字或字符串列。列数据类型的行为和处理如下：
+
+数字列：对于数字要素，列名称的哈希值用于将要素值映射到要素向量中的索引。
+默认情况下，数字要素不被视为字符串列（即使它们是整数）。
+要将它们视为字符串列，请使用categoricalCols参数指定相关列。
+
+字符串列：对于字符串，字符串"column\_name = value"的哈希值用于映射到矢量索引，
+指示符值为1.0。因此，类别特征是“一热”编码（类似于使用OneHotEncoder）。
+
+布尔列：布尔值的处理方式与字符串列相同。
+也就是说，布尔特征表示为“column\_name = true”或“column\_name = false”，
+指示符值为1.0。忽略空（缺失）值（在结果特征向量中隐式为零）。
+
+使用举例如下：
+\begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
+  rulesepcolor=\color{red!20!green!20!blue!20},  
+  keywordstyle=\color{blue!70!black},  
+  commentstyle=\color{blue!90!},  
+  basicstyle=\ttfamily]  
+val hasher = new FeatureHasher()
+  .setInputCols("real", "bool", "stringNum", "string")
+  .setOutputCol("features")
+\end{lstlisting}\par
 \subsection{朴素贝叶斯}
 
 \subsection{SVM}
