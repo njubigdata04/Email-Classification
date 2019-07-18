@@ -184,6 +184,7 @@ public class Bayes {
                 String currentClass = entry.getKey().toString();
                 String k = currentClass + "#" + word;
                 double sumClass = ClassSet.get(currentClass).doubleValue();
+                sumClass = TrainSet.get(currentClass).doubleValue();
                 double sumWord = WordSum.size();
                 double wordcount = 1;
                 if (TrainSet.containsKey(k)) {
