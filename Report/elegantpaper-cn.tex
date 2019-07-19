@@ -167,7 +167,7 @@
 
 \section{数据分析}
 这是一个有监督的多分类问题。对于训练数据全集，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数为：\par
-\begin{table}[htbp]
+\begin{table}[!htbp]
   \small
   \centering
   \caption{Auto MPG and Price \label{tab:reg}}
@@ -195,11 +195,11 @@
 \subsection{特征选择}
 本任务的主要工作是对原始的邮件文本中进行特征选择，选择出能够表征邮件主题的特征词，为后续的文本分类做准备。\par
 对于输入的未分词的邮件训练样本全集和停词表，我们需要输出全局邮件文本特征，并对它们进行相应的编号，此外，对于训练数据集的目录，将目录名（即文本类别）转换为相应的类别序号。\par
-对于该步骤，我们采用了两种计算方法，分别为半并行化和并行化计算方法。
+对于该任务，我们采用了两种计算方法，分别为半并行化和并行化计算方法。
 \subsubsection{半并行化计算方法}
 半并行化计算方法是指将该任务划分为两个步骤，第一步读取训练样本全集和停词表，生成干净文本；第二步读取干净文本，生成全局邮件特征集。\par
 第一步的主要思路是顺序执行，首先读取20\_newsgroup文件夹下的子文件夹，将子文件夹名（即类别名）转化为类编号并进行存储。将 Lucene 的 Standard Analyzer 分词器作为基类，输入停词表，自定义自己的带有停词表功能的停词器，然后顺序依次读取每个子文件夹下的所有文件，使用自定义的停词器对文本进行分词，并将分词结果储存在目标文件中，我们将分词后的文本称为干净文本，生成干净文本的过程是顺序执行，非并行化的。为了后续处理的方便性，我们修改输出文件的格式为：filename-classNum，filename为原文件的文件名，classNum为它所属的类别的编号，两者用分隔符 '-' 隔开。\par
-\begin{algorithm}[htb]  
+\begin{algorithm}[!htb]
   \caption{特征选择半并行化算法：第一步}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -217,7 +217,7 @@
   \end{algorithmic}
 \end{algorithm}
 第二步从干净文本中提取全局邮件文本特征集的过程是并行化的，使用MapReduce并行计算框架，在Map阶段读取干净文本，对于每一个单词word，发射(word,1)键值对。在Reduce阶段，设置一个全局缓存变量$n$，为每个单词维护一个编号，并将每个单词和相应的编号输出到全局邮件特征集中。\par
-\begin{algorithm}[htb]
+\begin{algorithm}[!htb]
   \caption{特征选择半并行化算法：第二步}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -243,7 +243,7 @@
 非并行化顺序执行，缺点也显而易见：计算速度慢，效率低，因此我们设计了并行化的计算方法，利用 MapReduce 计算框架，很好地并行处理大量的训练文本，极大地加快了处理速度。\par
 在Map阶段读取原文本，利用停词器将其分词后输出到目标目录下，同时对于每一个单词，发射(word,filename-classNum)键值对。值得注意的是，因为停词表是所有Mapper都需要各自初始化的，因此将其初始化放在Map阶段的setup过程中，首先将停词表文件路径存在DistributedCache中，然后在setup过程中读取该路径并利用其初始化停词器，在map过程中使用该停词器。\par
 在Reduce阶段，设置一个全局缓存变量$n$，用来表示每一个单词的唯一标号。输入为(word, value)。由于在Reduce阶段，已经将相同key的键值对都整合到了一起，因此读取的word值是唯一不重复的，只需要利用全局变量$n$为每一个单词分配相应的标号，并将单词和编号输出到目标文件中即可。\par
-\begin{algorithm}[htb]  
+\begin{algorithm}[!htb]  
   \caption{特征选择并行化算法}  
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -276,7 +276,7 @@
 
 \subsubsection{运行结果}
 该任务的输出结果如下图所示：
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.6\textwidth]{feature-out.png}
 	\caption{全局邮件文本特征 \label{fig:feature-out}}
@@ -311,7 +311,7 @@ $$\mathrm{tf{}idf_{i,j}} = \mathrm{tf_{i,j}} \times  \mathrm{idf_{i}}$$
 在TF Job中，主要任务是统计每个文件所有单词个数以及每个单词的出现次数，并计算每个单词在每个文件中的出现比例。\par
 在Map阶段，读取在上个任务中生成的干净文本，输入为(文件名filenanme-文本内容text)键值对，对于每一个单词word，发射(word:filename, 1)键值对，同时文本单词数量计数器count加一，当整个文本遍历完成后，发射(!:count)键值对。值得注意的是，我们还需要自定义Partitioner，因为我们希望传入Reducer的数据按文件名排序（即key中':'后面的字符串），所以在自定义Partitioner中需要分割key并取':'后面的filename作为划分和排序标准。\par
 在Reduce阶段，输入为(xxx:filename, list[v1, v2, ...])键值对，此处xxx可能是单词word，也可能是标记符'!'，当它是'!'时，value中存储的是该file中所有单词的数量，由于'!'是键盘上可输出的字符的ASCII码最小的字符，并且我们的自定义Partitioner使得来自相同文本（即filename相同）的键值对排列在一起并且传入同一个Reudcer，因此对于任意一个文本，所有来自它的键值对中(!:filename,value)是第一个被Reducer接收到的键值对，因此我们将其存储到全局缓存变量allWordCnt中；当它是word时，list[v1,v2,...]中存储的是该word在该file中的出现次数列表，将其相加即可获得该单词在该文本中的频数，此时全局缓存变量allWordCnt存储的是该文本中所有单词的数量，将二者相除即可得到该单词在该文本中的TF值，最后发射键值对(word:filename, tf)。\par
-\begin{algorithm}[htb]  
+\begin{algorithm}[!htb]  
   \caption{TF-IDF算法: TF-Job}  
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -348,7 +348,7 @@ $$\mathrm{tf{}idf_{i,j}} = \mathrm{tf_{i,j}} \times  \mathrm{idf_{i}}$$
 在IDF-Job中，需要计算两个值，一是文档数目，这个可以在Reducer外读取上下文信息来获得，另一个是包含某个单词的文件数目，由于TF-Job中已经输出(word:filename, tf)键值对，因此只需要读取TF-Job的输出，解析word和filename的对应关系，统计同一个包含同一个word的文件数目即可，这是一个典型的WordCount任务。\par
 在Map阶段，从输入的(key, text)键值对的text字符串按':'分割，':'前面的子字符串即为单词word，发射键值对(word,1)。\par
 在Reduce阶段，输入为(word, list[v1,v2,...])，只需要将list[v1,v2,...]累加起来，即为包含单词word的文档个数，利用公式$\mathrm{idf_{i}} =  \log \frac{|D|}{|\{j: t_{i} \in d_{j}\}|}$可以求得IDF值，最后发射键值对(word,idf)。\par
-\begin{algorithm}[htb]  
+\begin{algorithm}[!htb]  
   \caption{TF-IDF算法: IDF-Job}  
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -476,7 +476,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
 
 两个Job的伪代码实现如下。
 
-\begin{algorithm}[htb]
+\begin{algorithm}[!htb]
   \caption{朴素贝叶斯训练阶段第一个Job}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -485,95 +485,92 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
     \Ensure
     输出训练结果文件，记录键值对<类名\#单词，数量>
     \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
-    \Function {map}{$offset$, $text$}
+    \Function {map}{$key$, $text$}
       \For{each 单词 $w$ in $text$}
-        \State 类名编号$classnum = GetClassNum(GetFileName(w))$
-        \State Emit($classnum + "\#" + w$, 1)
+        \State 类名编号$classnum$ = getClassNum(getFileName($w$))
+        \State Emit($classnum$ + "\#" + $w$, 1)
       \EndFor
    \EndFunction
 
-	\State Combine阶段：合并<类名\#单词，num1>、<类名\#单词，num2>为<类名\#单词，num1+num2>
+	\State Combine阶段：合并<类名\#单词，$num1$>、<类名\#单词，$num2$>为<类名\#单词，$num1+num2$>
   \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
   \Function {reduce}{$key$, $values$}
-    \State sum = 0
+    \State $sum = 0$
     \For{value in values}
         \State $sum += value$
     \EndFor
-    \State Emit(key, sum)
+    \State Emit($key$, $sum$)
   \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[htb]
+\begin{algorithm}[!htb]
   \caption{朴素贝叶斯预测阶段第二个Job的Map阶段}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
     \Require
-    第一个Job训练结果键值对集合$A$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
+    第一个Job训练结果键值对集合$A$，训练邮件预测样本全集 $U$，类编号和类文件数对应表$B$
     \Ensure
     输出训练结果文件，记录键值对<类名\#单词，数量>
-  \State Map<String, int> TrainSet
-  \State Map<String, int> ClassSet
-  \State Set<String> WordSum    //记录词库
+  \State 定义全局缓存变量 Map<String, int> $trainSet$, $classSet$
+  \State 定义全局缓存变量 Set<String> $wordSum$    //记录词库
   \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
   \Function {setup}{$A$, $B$}
-    \For{(key, value) in A}
-      \State TrainSet.put(key, value)
-      \State WordSum.add(key.GetWord())
+    \For{each ($key$, $value$) in $A$}
+      \State $trainSet$.put($key$, $value$)
+      \State $wordSum$.add($key$.GetWord())
     \EndFor
-    \For{(key, value) in B}
-      \State ClassSet.put(key, value)
+    \For{each ($key$, $value$) in $B$}
+      \State $classSet$.put($key$, $value$)
     \EndFor
   \EndFunction
-  \Function {map}{$offset$, $text$}
+  \Function {map}{$key$, $text$}
+    \State $filename$ = $key$.getFileName()
     \For{each 单词 $w$ in $text$}
       \State 类名编号$classnum = GetClassNum(GetFileName(w))$
       \For{each 类别 $c$ in ClassSet.keys}
-        \State key = c + "\#" + word;
-        \State wordcount = 1 + TrainSet.get(key);//类中对应的词数
-        \State sumClass = TrainSet.get(currentClass);//类对应的单词总数
-        \State sumWord = WordSum.size(); //词库中词数量
-        \State result = log(wordcount / (sumClass + sumWord));
-        \State Emit(filename, currentClass + "\#" + result);
+        \State $key$ = $c$ + "\#" + $word$;
+        \State $wordcount$ = $1$ + $trainSet$.get($key$);//类中对应的词数
+        \State $sumClass$ = $trainSet$.get($c$);//类对应的单词总数
+        \State $sumWord$ = $wordSum$.size(); //词库中词数量
+        \State $result$ = log($wordcount$ / ($sumClass$ + $sumWord$));
+        \State Emit($filename$, $c$ + "\#" + $result$);
    		\EndFor
-      \State Emit($classnum + "\#" + w$, 1)
    \EndFor
   \EndFunction
-	\State Combine阶段：合并<类名\#单词，num1>、<类名\#单词，num2>为<类名\#单词，num1+num2>
-  \end{algorithmic}
+	\end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[htb]
+\begin{algorithm}[!htb]
   \caption{朴素贝叶斯预测阶段第二个Job的Reduce阶段}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
     \Require
     第一个Job训练结果键值对集合$A$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
     \Ensure
-    输出训练结果文件，记录键值对<类名\#单词，数量>
-  \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
-  \State Map<String, int> ClassSet
-  \State SumFile
+    输出预测结果文件，记录键值对<文件名，类编号>
+  \State 定义全局缓存变量 Map<String, int> $classSet$
+  \State 定义全局缓存变量 $sumFile$
   \Function {setup}{$B$}
     \For{(key, value) in B}
       \State ClassSet.put(key, value)
       \State SumFile += value
     \EndFor
   \EndFunction
-  \Function {reduce}{$key$, $value$}
-    \State Map<String, double> MapResult
-    \For{value in values}
-        \State 类名编号classno = value.GetClassNum
-        \State number = value.GetNum()
-        \If{MapResult.contains(classno)}
-          \State number += MapResult(classno)
+  \Function {reduce}{$key$, $values$}
+    \State Map<String, double> $mapResult$
+    \For{$value$ in $values$}
+        \State 类名编号$classno$ = $value$.GetClassNum()
+        \State $number$ = $value$.GetNum()
+        \If{$mapResult$.contains($classno$)}
+          \State $number$ += $mapResult$($classno$)
         \Else
-          \State number += log(ClassSet.get(classname) / SumFile)
+          \State $number$ += log($classSet$.get($classname$) / $SumFile$)
         \EndIf  
-        MapResult.put(classno, number)
+        \State MapResult.put($classno$, $number$)
     \EndFor
-    \State MaxClass = Max(MapResult) // 找到数值最大对应的类编号
-    \State Emit(key, MaxClass) // 输出结果
+    \State $maxClass$ = Max($mapResult$) // 找到数值最大对应的类编号
+    \State Emit($key$, $maxClass$) // 输出结果
   \EndFunction
   \end{algorithmic}
 \end{algorithm}
