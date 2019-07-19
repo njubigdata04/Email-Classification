@@ -30,14 +30,15 @@ public class GetClassNum {
             String[] parts = path.split("/");
             if(parts.length < 2)
                 return "Wrong class" + parts[0];
-            return parts[parts.length - 2];
+            //return parts[parts.length - 2];
+            return parts[parts.length - 1].split("-")[1];
         }
         private String splitfilename(FileSplit fileSplit){
             String path = fileSplit.getPath().toString();
             String[] parts = path.split("/");
             if(parts.length < 2)
                 return "Wrong class" + parts[0];
-            return parts[parts.length - 1];
+            return parts[parts.length - 1].split("-")[0];
         }
     }
 

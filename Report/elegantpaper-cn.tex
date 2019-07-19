@@ -472,9 +472,64 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)}{\sum_{w \in v}count(w, C_{k})}$$
 $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+1)}=\frac{count(w_i, C_k)+1}{\sum_{w \in v}count(w, C_{k})+|V|}$$
 其中$|V|$表示词库的单词数。
 \subsubsection{Hadoop MapReduce的实现}
+首先需要数据预处理，计算每个类对应的文件数便于接下来计算先验概率$p(c)$。用一个Job来实现这个功能。
+
+在这个Job的Map阶段，输入的是前面经过处理的文件格式：每个样本是一个文件，文件名为“文件名-类编号”的格式。在Map阶段中利用split得到相应的文件名和类编号，输出键值对<类编号，文件名>
+
+在Reduce阶段，用一个全局缓存变量Set来保存一个类编号的文件名，合并计算得到Set的元素个数就是类编号对应的文件数，最终输出键值对<类编号，文件数>到输出文件中。
+
+算法伪代码如下。
+\begin{algorithm}[!htb]
+  \caption{预处理得到类与对应的文件数关系}
+  \label{alg:Framwork}
+  \begin{algorithmic}[1]
+    \Require
+    邮件训练样本全集 $U$
+    \Ensure
+    输出键值对<类编号，文件名>
+    \State Map阶段：得到相应的文件名和类编号，输出键值对<类编号，文件名>
+    \Function {map}{$key$, $text$}
+      \For{each 单词 $w$ in $text$}
+        \State 类名编号$classnum$ = getFileName($w$)).split("-")[1]
+		 \State 文件名$filename$ = getFileName($w$)).split("-")[0]
+        \State Emit($classnum$ , $filename$)
+      \EndFor
+   \EndFunction
+
+  \State Reduce阶段：合并并输出<类编号，文件数量>到输出文件中
+  \State 定义全局缓存变量 Map<String,int> $list$记录类编号对应文件数量
+  
+  \Function {reduce}{$key$, $values$}
+    \State 定义全局缓存变量 Set<String> $files$
+    \For{$value$ in $values$}
+        \State $files$.add($value$)
+    \EndFor
+    \State $list$.put(($key$, $files$.size())
+  \EndFunction
+  \Function {cleanup}{}
+    \For{($key$, $value$) in $list$}
+        \State Emit($key$, $value$)
+    \EndFor
+  \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+最终得到的输出结果截图如下：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.4\textwidth]{BayesTrainResult.png}
+	\caption{训练Job输出结果 \label{fig:BayesTrainResult}}
+\end{figure}
+
 在Hadoop MapReduce的实现中分成了两个Job来完成，分别是训练阶段的Job和预测阶段的Job。
 
-两个Job的伪代码实现如下。
+在训练阶段的Job中实现的功能是对每个样本中的每个单词，输出键值对<类编号\#单词，单词出现的次数>。使用这种结构的好处是：可以通过Map映射方便找到每个单词在不同类中的出现次数。
+
+在Map阶段中，利用FileSplit结构获得文件名，从文件名中就可以的获得单词所属的类别。用StringTokenizer划分出单词，对每个单词输出键值对<类编号\#单词, 1>
+
+在Combine和Reduce阶段中，对读入的键值对<类编号\#单词，单词出现的次数>进行合并，最后输出即可。
+
+第一个Job算法伪代码如下算法。
 
 \begin{algorithm}[!htb]
   \caption{朴素贝叶斯训练阶段第一个Job}
@@ -483,8 +538,8 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
     \Require
     邮件训练样本全集 $U$
     \Ensure
-    输出训练结果文件，记录键值对<类名\#单词，数量>
-    \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
+    输出训练结果文件，记录键值对<类编号\#单词，数量>
+    \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类编号\#单词，数量>
     \Function {map}{$key$, $text$}
       \For{each 单词 $w$ in $text$}
         \State 类名编号$classnum$ = getClassNum(getFileName($w$))
@@ -496,13 +551,30 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
   \State Reduce阶段：合并并输出<类名\#单词，数量>到输出文件中
   \Function {reduce}{$key$, $values$}
     \State $sum = 0$
-    \For{value in values}
+    \For{$value$ in $values$}
         \State $sum += value$
     \EndFor
     \State Emit($key$, $sum$)
   \EndFunction
   \end{algorithmic}
 \end{algorithm}
+
+最终得到的输出结果截图如下：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.4\textwidth]{GetClassNum.png}
+	\caption{类编号与对应文件数 \label{fig:GetClassNum}}
+\end{figure}
+
+预测阶段Job实现根据样本数据，计算朴素贝叶斯方法下每个样本对应各个类的概率，比较得到最大概率对应的类别就是预测类别。
+
+在Map的setup阶段中，先将训练阶段的键值对输出结果<类名\#单词，出现次数>保存到全局缓存变量Map结构体中，并计算得到每个类对应的单词总数，作为<类名，单词总数量>也加入到Map中。同时构建全局缓存变量Set结构体作为词库，将出现过的单词加入到Set中，Set中元素个数就是词库的大小。
+
+在map阶段，对每个样本的每个单词$w_i$，计算对每个类$c$的似然函数的值$v=p(w|C_{k})=\frac{count(w_i, c)+1}{\sum_{w \in v}(count(w, C_{k})+1)}=\frac{count(w_i, c)+1}{\sum_{w \in v}count(w, C_{k})+|Set|}$并输出键值对<文件名，$c\#v$>。其中$count(w_i, c)$可以通过Map映射找到。
+
+在Reduce阶段，输入是map阶段输出的键值对<文件名，$c\#v$>，对于每个相同的类别c，计算v的乘积，并乘上先验概率$p(c)$得到结果就是该样本对应类别c的概率，取其中概率最大的类别作为预测结果，输出<文件名，预测类编号>
+
+第二个Job算法如下：
 
 \begin{algorithm}[!htb]
   \caption{朴素贝叶斯预测阶段第二个Job的Map阶段}
@@ -511,7 +583,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
     \Require
     第一个Job训练结果键值对集合$A$，训练邮件预测样本全集 $U$，类编号和类文件数对应表$B$
     \Ensure
-    输出训练结果文件，记录键值对<类名\#单词，数量>
+    输出键值对<文件名，类别\#似然函数数值>
   \State 定义全局缓存变量 Map<String, int> $trainSet$, $classSet$
   \State 定义全局缓存变量 Set<String> $wordSum$    //记录词库
   \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
@@ -546,11 +618,11 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
   \label{alg:Framwork}
   \begin{algorithmic}[1]
     \Require
-    第一个Job训练结果键值对集合$A$训练邮件预测样本全集 $U$， 类编号和类文件数对应表$B$
+    Map阶段的输出，类编号和类文件数对应表$B$
     \Ensure
-    输出预测结果文件，记录键值对<文件名，类编号>
+    输出预测结果文件，记录键值对<文件名，预测类编号>
   \State 定义全局缓存变量 Map<String, int> $classSet$
-  \State 定义全局缓存变量 $sumFile$
+  \State 定义全局缓存变量 $sumFile$表示文件总数
   \Function {setup}{$B$}
     \For{(key, value) in B}
       \State ClassSet.put(key, value)
@@ -575,6 +647,12 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
   \end{algorithmic}
 \end{algorithm}
 
+得到的结果如下图。
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.4\textwidth]{BayesPredictResult.png}
+	\caption{预测结果 \label{fig:BayesPredictResult}}
+\end{figure}
 
 \section{Spark实现}
 \subsection{简介}
