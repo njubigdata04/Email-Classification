@@ -26,144 +26,8 @@
 \keywords{邮件分类，并行计算，MapReduce，Spark}
 \end{abstract}
 
-\section{引入}
+\section{引言}
 
-
-
-此模板是基于 \LaTeX{} 的标准文类 article设计，也即意味着你可以把 article 文类的选项传递给本模板，比如 \lstinline{a4paper, 10pt} 等等（推荐使用 \lstinline{11pt}）。本模板支持 \lstinline{PDFLaTeX} 和 \lstinline{XeLaTeX}\footnote{中文字体均使用 \lstinline{ctex} 包设置。} 两种编译方式。
-
-数学字体的效果如下：
-
-\begin{equation}
-(a+3b)^{n} = \sum_{k=0}^{n} C_{n}^{k} a^{n-k} (3b)^k\label{eq:binom}
-\end{equation}
-      
-\subsection{全局选项}
-我在这个模板中定义了一个语言选项 \lstinline{lang}，可以选择英文模式 \lstinline{lang=en}（默认）或者中文模式 \lstinline{lang=cn}。当选择中文模式时，图表的标题引导词以及参考文献，定理引导词等信息会变成中文。你可以通过下面两种方式来选择语言模式：
-
-\begin{lstlisting}
-\documentclass[lang=cn]{elegantpaper} % or
-\documentclass{cn}{elegantpaper} 
-\end{lstlisting}
-
-
-\subsection{自定义命令}
-在此模板中，并没有修改任何默认的命令或者环境，所以，你可以在此模板使用原来的命令和环境。另外，我自定义了 3 个命令：
-
-\begin{enumerate}
-	\item \lstinline{\email}：创建邮箱地址的链接；
-	\item \lstinline{\figref}：用法和 \lstinline{\ref} 类似，但是会在插图的标题前添加 <\textbf{图 n}> ；
-	\item \lstinline{\tabref}：用法和 \lstinline{\ref} 类似，但是会在表格的标题前添加 <\textbf{表 n}>；
-	\item \lstinline{\keywords}：为摘要环境添加关键词。
-\end{enumerate}
-
-\subsection{列表环境}
-你可以使用列表环境（\lstinline{itemize}、\lstinline{enumerate}、\lstinline{description}），示例如下：\\[2ex]
-\begin{minipage}[c]{0.59\linewidth}
-\begin{lstlisting}
-\begin{itemize}
-   \item Routing and resource discovery;
-   \item Resilient and scalable networks; 
-   \item Distributed storage and search.
-\end{itemize}
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}[c]{0.4\linewidth}
-\begin{itemize}
-   \item Routing and resource discovery;
-   \item Resilient and scalable networks;
-   \item Distributed storage and search.
-\end{itemize}
-\end{minipage}
-
-
-
-
-\subsection{插图}
-插图的命令和以前一样，也是使用 \lstinline{figure} 环境。\figref{fig:scatter} 显示了插图的效果。你可以把你的图放到当前工作目录的如下子目录下 (\lstinline{./image/}, \lstinline{./img/}, \lstinline{./figure/}, \lstinline{./fig/})。
-
-
-\begin{lstlisting}
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.6\textwidth]{scatter.pdf}
-	\caption{Scatter Plot Example \label{fig:scatter}}
-\end{figure}
-\end{lstlisting}
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.6\textwidth]{scatter.pdf}
-	\caption{Scatter Plot Example \label{fig:scatter}}
-\end{figure}
-
-\subsection{表格}
-我强烈建议你使用 \lstinline{booktabs} 宏包，这个宏包有三个命令 \lstinline{\toprule}、\lstinline{\midrule} 和 \lstinline{\bottomrule} 能方便你制作三线表。\tabref{tab:reg} 是一个示例：
-
-\begin{lstlisting}
-\begin{table}[htbp]
-  \small
-  \centering
-  \caption{Auto MPG and Price \label{tab:reg}}
-    \begin{tabular}{lcc}
-    \toprule
-                    &       (1)         &        (2)      \\
-    \midrule
-    mpg             &    -238.90***     &      -49.51     \\
-                    &     (53.08)       &      (86.16)    \\
-    weight          &                   &      1.75***    \\
-                    &                   &      (0.641)    \\
-    constant        &     11,253***     &       1,946     \\
-                    &     (1,171)       &      (3,597)    \\
-    obs             &        74         &         74      \\
-    $R^2$           &      0.220        &       0.293     \\
-    \bottomrule
-    \multicolumn{3}{l}{\scriptsize Standard errors in parentheses} \\
-    \multicolumn{3}{l}{\scriptsize *** p<0.01, ** p<0.05, * p<0.1} \\
-    \end{tabular}%
-\end{table}%
-\end{lstlisting}
-\begin{table}[htbp]
-  \small
-  \centering
-  \caption{Auto MPG and Price \label{tab:reg}}
-    \begin{tabular}{lcc}
-    \toprule
-                    &       (1)         &        (2)      \\
-    \midrule
-    mpg             &    -238.90***     &      -49.51     \\
-                    &     (53.08)       &      (86.16)    \\
-    weight          &                   &      1.75***    \\
-                    &                   &      (0.641)    \\
-    constant        &     11,253***     &       1,946     \\
-                    &     (1,171)       &      (3,597)   \\
-    obs             &        74         &         74     \\
-    $R^2$           &      0.220        &       0.293    \\
-    \bottomrule
-    \multicolumn{3}{l}{\scriptsize Standard errors in parentheses} \\
-    \multicolumn{3}{l}{\scriptsize *** p<0.01, ** p<0.05, * p<0.1} \\
-    \end{tabular}%
-\end{table}%
-
-
-
-\subsection{参考文献}
-你可以在谷歌学术，Mendeley，Endnote 中获得文献条目（bib item），然后把它们添加到 \lstinline{wpref.bib} 中。在文中引用的时候，引用它们的键值（bib key）即可。注意需要在编译的过程中添加 Bib\TeX{} 编译。如果你想在参考文献中添加未引用的文献（部分或者全部），可以使用
-
-\begin{lstlisting}
-\nocite{EINAV2010, Havrylchyk2018} % add the two reference.
-\nocite{*}   % add all the reference in the bib file.
-\end{lstlisting}
-
-如果你想修改参考文献的样式（比如改为 \lstinline{aer}），你可以在导言区将下面代码注释掉。
-\begin{lstlisting}
-\usepackage[authoryear]{gbt7714}
-\end{lstlisting}
-
-并且文档末尾添加
-
-\begin{lstlisting}
-\bibliographystyle{aer}
-\end{lstlisting}
 
 \section{数据分析}
 这是一个有监督的多分类问题。对于训练数据全集，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数为：\par
@@ -425,12 +289,11 @@ IDF-Job的输出文件格式为：
 
 \subsection{运行结果}
 通过将TF-IDF任务的输出格式整理后，最终的输出结果如下图所示：
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.6\textwidth]{tfidf.png}
 	\caption{特征向量权重计算（TF-IDF） \label{fig:tfidf}}
 \end{figure}
-
 \subsection{朴素贝叶斯}
 \subsubsection{原理推导}
 朴素贝叶斯算法是生成模型中分类算法之一。所有朴素贝叶斯分类器都假设特定特征的值独立于给定类变量的任何其他特征的值。例如，如果水果是红色的，圆形的，直径约10厘米，则可以认为它是苹果。朴素贝叶斯分类器认为这些特征中的每一个都独立地贡献于该果实是苹果的概率，而不管任何可能的颜色，圆度和直径特征之间的相关性。
@@ -578,16 +441,16 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
 
 \section{Spark实现}
 \subsection{简介}
-ml和mllib都是Spark中的机器学习库，目前常用的机器学习功能2个库都能满足需求。
-spark官方推荐使用ml, 因为ml功能更全面更灵活，未来会主要支持ml，mllib很有可能会被废弃(据说可能是在spark3.0中deprecated）。
+ML和MLlib都是Spark中的机器学习库，目前常用的机器学习功能2个库都能满足需求。
+spark官方推荐使用ML, 因为ML功能更全面更灵活，未来会主要支持ML，MLlib很有可能会被废弃(据说可能是在Spark3.0中deprecated）。
 
-两者的不同在于ml主要操作的是DataFrame, 而mllib操作的是RDD，也就是说二者面向的数据集不一样。相比于mllib在RDD提供的基础操作，ml在DataFrame上的抽象级别更高，数据和操作耦合度更低。
+两者的不同在于ML主要操作的是DataFrame, 而MLlib操作的是RDD，也就是说二者面向的数据集不一样。相比于MLlib在RDD提供的基础操作，ML在DataFrame上的抽象级别更高，数据和操作耦合度更低。
 
 DataFrame是Dataset的子集，也就是Dataset[Row], 而DataSet是对RDD的封装，对SQL之类的操作做了很多优化。
-相比于mllib在RDD提供的基础操作，ml在DataFrame上的抽象级别更高，数据和操作耦合度更低。
-ml中的操作可以使用pipeline, 跟sklearn一样，可以把很多操作(算法/特征提取/特征转换)以管道的形式串起来，然后让数据在这个管道中流动。
-ml中无论是什么模型，都提供了统一的算法操作接口，比如模型训练都是fit；不像mllib中不同模型会有各种各样的trainXXX。
-mllib在spark2.0之后进入维护状态, 这个状态通常只修复BUG不增加新功能。
+相比于MLlib在RDD提供的基础操作，ML在DataFrame上的抽象级别更高，数据和操作耦合度更低。
+ML中的操作可以使用pipeline, 跟sklearn一样，可以把很多操作(算法/特征提取/特征转换)以管道的形式串起来，然后让数据在这个管道中流动。
+ML中无论是什么模型，都提供了统一的算法操作接口，比如模型训练都是fit；不像mllib中不同模型会有各种各样的trainXXX。
+MLlib在Spark2.0之后进入维护状态, 这个状态通常只修复BUG不增加新功能。
 
 所以综上我们在这里使用ml库来实现操作。
 \subsection{数据预处理：特征提取}
@@ -672,23 +535,86 @@ Word2Vec 是一种著名的词嵌入（Word Embedding） 方法，它可以计�
   keywordstyle=\color{blue!70!black},  
   commentstyle=\color{blue!90!},  
   basicstyle=\ttfamily]  
-val word2Vec = new Word2Vec().setInputCol("text").
-	setOutputCol("features").
-	setVectorSize(500).setMinCount(0)
+val word2Vec = new Word2Vec()
+  .setInputCol("text")
+	.setOutputCol("features")
+	.setVectorSize(500).setMinCount(0)
 \end{lstlisting}\par
 
-\subsection{朴素贝叶斯}
-ml库中的NaiveBayes类实现了朴素贝叶斯模型。支持多项式朴素贝叶斯，可以直接用TF-IDF的结果进行训练，模型可调参数有：特征值列名(featuresCol)、标签列名(labelCol)、模型类型(modelType，默认为多项式朴素贝叶斯)、平滑系数(smoothing)等。使用示例如下：
+\subsection{朴素贝叶斯 Naive Bayes}
+ML库中的NaiveBayes类实现了朴素贝叶斯模型。支持多项式朴素贝叶斯，可以直接用TF-IDF的结果进行训练，模型可调参数有：特征值列名(featuresCol)、标签列名(labelCol)、模型类型(modelType，默认为多项式朴素贝叶斯)、平滑系数(smoothing)等。使用示例如下：
 \begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
   rulesepcolor=\color{red!20!green!20!blue!20},  
   keywordstyle=\color{blue!70!black},  
   commentstyle=\color{blue!90!},  
   basicstyle=\ttfamily]  
-val model = new NaiveBayes().setFeaturesCol("features").
-	setModelType("multinomial")
-\end{lstlisting}\par
-\subsection{SVM}
+val model = new NaiveBayes()
+  .setFeaturesCol("features")
+	.setModelType("multinomial")
+\end{lstlisting}
 
-\subsection{结果对比}
+\subsection{支持向量机 SVM}
+
+\subsection{随机森林 Random Forest}
+随机森林是一个包含多个决策树的分类器，并且其输出的类别是由个别树输出的类别的众数而定。这个方法则是结合Breimans的"Bootstrap aggregating"想法和Ho的"random subspace method" 以建造决策树的集合。随机森林的构造过程是：
+\begin{enumerate}[1.]
+  \item 假如有$N$个样本，则有放回的随机选择$N$个样本(每次随机选择一个样本，然后返回继续选择)。这选择好了的$N$个样本用来训练一个决策树，作为决策树根节点处的样本。
+  \item 当每个样本有$M$个属性时，在决策树的每个节点需要分裂时，随机从这$M$个属性中选取出$m$个属性，满足条件$m << M$。然后从这$m$个属性中采用某种策略（比如说信息增益）来选择$1$个属性作为该节点的分裂属性。
+  \item 决策树形成过程中每个节点都要按照步骤2来分裂（很容易理解，如果下一次该节点选出来的那一个属性是刚刚其父节点分裂时用过的属性，则该节点已经达到了叶子节点，无须继续分裂了）。一直到不能够再分裂为止。注意整个决策树形成过程中没有进行剪枝。
+  \item 按照步骤1$\sim$3建立大量的决策树，这样就构成了随机森林了。
+\end{enumerate}\par
+我们使用Spark MLlib中的RandomForestClassifier模型，调用方法和参数设置如下：
+\begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
+  rulesepcolor=\color{red!20!green!20!blue!20},  
+  keywordstyle=\color{blue!70!black},  
+  commentstyle=\color{blue!90!},  
+  basicstyle=\ttfamily]
+  val model = new RandomForestClassifier()
+  .setFeaturesCol("features")
+  .setMaxDepth(30)
+  .setNumTrees(num)
+  .fit(trainDataRdd)
+\end{lstlisting}\par
+我们设置每一棵决策树的最大深度为30（RandomForestClassifier模型限制maxDepth参数最大为30），num为决策树的数量，我们通过改变num的值来观察随机森林预测效果随着决策树数量变化而发生的变化。\par
+对于样本特征提取，我们使用TF-IDF和Word2Vec两种方式，并进行了对比，实验结果如下图所示：
+
+\begin{figure}[!htbp]
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{tfidf-rf-reacll.jpg}
+  \caption{基于TF-IDF的RF测试集Recall}
+  \label{fig:side:a}
+  \end{minipage}
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{word2vec-rf-reacll.jpg}
+  \caption{基于Word2Vec的RF测试集Recall}
+  \label{fig:side:b}
+  \end{minipage}
+  \end{figure}
+
+
+  \begin{figure}[!htbp]
+    \begin{minipage}[t]{0.5\linewidth}
+    \centering
+    \includegraphics[width=3.5in]{tfidf-rf-precision.jpg}
+    \caption{基于TF-IDF的RF测试集Precision}
+    \label{fig:side:a}
+    \end{minipage}
+    \begin{minipage}[t]{0.5\linewidth}
+    \centering
+    \includegraphics[width=3.5in]{word2vec-rf-precision.jpg}
+    \caption{基于Word2Vec的RF测试集Precision}
+    \label{fig:side:b}
+    \end{minipage}
+    \end{figure}
+
+\section{结果分析}
 使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
+
+\section{参考文献}
+【1】\href{https://www.cnblogs.com/loveling-0239/p/7884195.html}{Hadoop分布式缓存}\par
+【2】 \href{https://en.wikipedia.org/wiki/Tf%E2%80%93idf}{TF-IDF: Wikipedia} \par
+【3】 \href{https://blog.csdn.net/qq_41571900/article/details/85069055}{IDEA将依赖的第三方jar包打入jar包} \par
+【4】 \href{http://spark.apache.org/docs/latest/ml-features.html}{Spark MLlib Document}
 \end{document}
