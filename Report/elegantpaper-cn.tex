@@ -471,7 +471,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)}{\sum_{w \in v}count(w, C_{k})}$$
 需要考虑特殊情况某一类的文档不包含某个词时，考虑add-one-smoothing，类似于拉普拉斯修正，其实就是将“出现次数加一”。此时似然函数变为：
 $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+1)}=\frac{count(w_i, C_k)+1}{\sum_{w \in v}count(w, C_{k})+|V|}$$
 其中$|V|$表示词库的单词数。
-\subsubsection{Hadoop的实现}
+\subsubsection{Hadoop MapReduce的实现}
 在Hadoop MapReduce的实现中分成了两个Job来完成，分别是训练阶段的Job和预测阶段的Job。
 
 两个Job的伪代码实现如下。
@@ -588,16 +588,35 @@ spark官方推荐使用ml, 因为ml功能更全面更灵活，未来会主要支
 
 DataFrame是Dataset的子集，也就是Dataset[Row], 而DataSet是对RDD的封装，对SQL之类的操作做了很多优化。
 相比于mllib在RDD提供的基础操作，ml在DataFrame上的抽象级别更高，数据和操作耦合度更低。
-ml中的操作可以使用pipeline, 跟sklearn一样，可以把很多操作(算法/特征提取/特征转换)以管道的形式串起来，然后让数据在这个管道中流动。大家可以脑补一下Linux管道在做任务组合时有多么方便。
+ml中的操作可以使用pipeline, 跟sklearn一样，可以把很多操作(算法/特征提取/特征转换)以管道的形式串起来，然后让数据在这个管道中流动。
 ml中无论是什么模型，都提供了统一的算法操作接口，比如模型训练都是fit；不像mllib中不同模型会有各种各样的trainXXX。
 mllib在spark2.0之后进入维护状态, 这个状态通常只修复BUG不增加新功能。
 
+所以综上我们在这里使用ml库来实现操作。
 \subsection{数据预处理：特征提取}
+\subsubsection{计算TF-IDF}
 第一步：读取原文本转换成DataFrame
+
+注意：由于Spark2.0起，SQLContext、HiveContext已经不再推荐使用，改以SparkSession代之，故本文中不再使用SQLContext来进行相关的操作，关于SparkSession的可以参看Spark2.0的官方文档。Spark2.0以上版本的spark-shell在启动时会自动创建一个名为spark的SparkSession对象，当需要手工创建时，SparkSession可以由其伴生对象的builder()方法创建出来。RDD转DataFrame的实现通过toDF接口来实现。使用举例如下：
+
+
+我们的文档是已经经过前面预处理过的文档，每个文件表示一个样本，每个样本名字为“文件名-类名编号”，文件内容由邮件单词构成，每一行为一个单词。
 
 第二步:分词处理
 
-第三步：将单词转换成对应的矩阵
+分词使用的是RegexTokenizer库。根据官方文档，RegexTokenizer通过正则化式子来划分句子。在前面的处理中我们已经得到了样本中单词的划分使用的是换行符，所以正则表达式使用的是“$\backslash s$”表示切分符为包括空格、制表符、换页符等空白字符的其中任意一个。使用示例如下：
+\begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
+  rulesepcolor=\color{red!20!green!20!blue!20},  
+  keywordstyle=\color{blue!70!black},  
+  commentstyle=\color{blue!90!},  
+  basicstyle=\ttfamily]  
+val regexTokenizer = new RegexTokenizer()
+  .setInputCol("sentence")
+  .setOutputCol("words")
+  .setPattern("\\s")
+\end{lstlisting}\par
+
+第三步：将单词转换成对应的矩阵,计算频率
 
 根据官方文档API，FeatureHasher的作用是将一组分类或数字特征投影到指定尺寸的特征向量中（通常远小于原始特征空间的特征向量）。这是使用散列技巧将要素映射到特征向量中的索引来完成的。
 
@@ -624,9 +643,55 @@ val hasher = new FeatureHasher()
   .setInputCols("real", "bool", "stringNum", "string")
   .setOutputCol("features")
 \end{lstlisting}\par
-\subsection{朴素贝叶斯}
 
+第四步：计算TF-IDF
+
+ml库中的IDF类根据给出的文档计算相应的IDF，IDFModel采用特征向量（通常从HashingTF或CountVectorizer创建）并缩放每个特征。直观地，它降低了在语料库中频繁出现的特征的权重。使用示例如下：
+\begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
+  rulesepcolor=\color{red!20!green!20!blue!20},  
+  keywordstyle=\color{blue!70!black},  
+  commentstyle=\color{blue!90!},  
+  basicstyle=\ttfamily]  
+val idf = new IDF().setInputCol("rawFeatures").setOutputCol("features")
+\end{lstlisting}\par
+
+\subsubsection{计算Word2Vec}
+Word2Vec 是一种著名的词嵌入（Word Embedding） 方法，它可以计算每个单词在其给定语料库环境下的分布式词向量（Distributed Representation，亦直接被称为词向量）。词向量表示可以在一定程度上刻画每个单词的语义。
+
+如果词的语义相近，它们的词向量在向量空间中也相互接近，这使得词语的向量化建模更加精确，可以改善现有方法并提高鲁棒性。词向量已被证明在许多自然语言处理问题，如：机器翻译，标注问题，实体识别等问题中具有非常重要的作用。
+
+​ Word2vec是一个Estimator，它采用一系列代表文档的词语来训练Word2VecModel。该模型将每个词语映射到一个固定大小的向量。Word2VecModel使用文档中每个词语的平均数来将文档转换为向量，然后这个向量可以作为预测的特征，来计算文档相似度计算等等。
+
+​ Word2Vec具有两种模型，其一是 CBOW ，其思想是通过每个词的上下文窗口词词向量来预测中心词的词向量。其二是 Skip-gram，其思想是通过每个中心词来预测其上下文窗口词，并根据预测结果来修正中心词的词向量。两种方法示意图如下图所示：
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.6\textwidth]{word2vecModel.png}
+	\caption{CBOW和Skip-gram模型 \label{fig:Word2VecModel}}
+\end{figure}
+总结简单来说，Word2Vector实际上就是用神经网络来实现词向量的生成。
+使用举例如下：
+\begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
+  rulesepcolor=\color{red!20!green!20!blue!20},  
+  keywordstyle=\color{blue!70!black},  
+  commentstyle=\color{blue!90!},  
+  basicstyle=\ttfamily]  
+val word2Vec = new Word2Vec().setInputCol("text").
+	setOutputCol("features").
+	setVectorSize(500).setMinCount(0)
+\end{lstlisting}\par
+
+\subsection{朴素贝叶斯}
+ml库中的NaiveBayes类实现了朴素贝叶斯模型。支持多项式朴素贝叶斯，可以直接用TF-IDF的结果进行训练，模型可调参数有：特征值列名(featuresCol)、标签列名(labelCol)、模型类型(modelType，默认为多项式朴素贝叶斯)、平滑系数(smoothing)等。使用示例如下：
+\begin{lstlisting}[language={Scala},numbers=left,numberstyle=\tiny,%frame=shadowbox,  
+  rulesepcolor=\color{red!20!green!20!blue!20},  
+  keywordstyle=\color{blue!70!black},  
+  commentstyle=\color{blue!90!},  
+  basicstyle=\ttfamily]  
+val model = new NaiveBayes().setFeaturesCol("features").
+	setModelType("multinomial")
+\end{lstlisting}\par
 \subsection{SVM}
 
-
+\subsection{结果对比}
+使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
 \end{document}

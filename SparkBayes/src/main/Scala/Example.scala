@@ -44,10 +44,14 @@ object Example {
 
     //分好的词转成数组
     var tokenizer = new Tokenizer().setInputCol("text").setOutputCol("words")
+    val regexTokenizer = new RegexTokenizer().
+      setInputCol("text").setOutputCol("words")
+      .setPattern("\\s") // alternatively .setPattern("\\w+").setGaps(false)
     var hashingTF = new HashingTF().setInputCol("words").setOutputCol("rawFeatures").setNumFeatures(5000)
     var idf = new IDF().setInputCol("rawFeatures").setOutputCol("features")
 
     val pipeline = new Pipeline() setStages (Array(tokenizer, hashingTF, idf))
+    val pipeline = new Pipeline() setStages (Array(regexTokenizer, hashingTF, idf))
     var idfModel = pipeline.fit(trainset)
 
     //转换
