@@ -687,6 +687,22 @@ val model = new NaiveBayes()
     \end{minipage}
     \end{figure}
 
+    \begin{figure}[!htbp]
+      \begin{minipage}[t]{0.5\linewidth}
+      \centering
+      \includegraphics[width=3.5in]{acc-rf.jpg}
+      \caption{RF测试集Accuracy比较}
+      \label{fig:side:a}
+      \end{minipage}
+      \begin{minipage}[t]{0.5\linewidth}
+      \centering
+      \includegraphics[width=3.5in]{f1-rf.jpg}
+      \caption{RF测试集F1-score比较}
+      \label{fig:side:b}
+      \end{minipage}
+    \end{figure}
+分析实验结果，我们可以看到，总体上来说Random Forest在这个任务下的表现较为平庸，accuracy只能达到80\%多，但我们认为这和Spark ML库提供的RandomForestClassifier模型对决策树maxDepth参数的限制有关，由于maxDepth最大只能为30，而本任务是一个20个类别的多分类问题，显然深度30的决策树是远远不够的，因此达到80\%左右的accuracy可以说是在意料之中。\par
+此外，无论是通过TF-IDF还是Word2Vec来提取特征，随着决策树数量的上升，accuracy总体上来说是呈上升趋势，并且最终都逐渐趋向于80\%多附近，增速趋向平稳，并且在同一种特征提取方法下，预测结果是同分布的，它们的recall和precision值都服从同一种分布，通过横向对比，这两种特征提取方式的预测结果的分布也大致类似，在大多数类别上，它们的预测表现都十分相似，总体上来说，TF-IDF不同类别的预测表现较为均衡，而Word2Vec的预测表现则波动很大，在某些类别上表现很差。总体来说，如果关注accuracy，那么Word2Vec显然更好，它在少量决策树的情况下就已经比TF-IDF高出很多，并一直表现得更优。但如果关注precison，recall或者F1-score的话，两者区别不是很大，在每个类别上各有优劣，总体来说表现相近。
 \section{结果分析}
 使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
 
