@@ -1,6 +1,6 @@
 import NaiveBayes.RawDataRecord
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.classification.NaiveBayesModel
+import org.apache.spark.ml.classification.{NaiveBayes, NaiveBayesModel}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{HashingTF, IDF, LabeledPoint, Tokenizer}
 import org.apache.spark.ml.linalg.{Vector, Vectors}
@@ -77,25 +77,25 @@ object Example {
      */
     import sparkSession.implicits._
     val sqlContext=new SQLContext(sc)
-    var trainDataRdd = sqlContext.read.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/regex-train-df")
-    var testDataRdd = sqlContext.read.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/regex-test-df")
+    var trainDataRdd = sqlContext.read.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/regex-train-df10000")
+    var testDataRdd = sqlContext.read.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/regex-test-df10000")
 
     trainDataRdd.show(false)
     testDataRdd.show(false)
-    //val model = new NaiveBayes().setFeaturesCol("features").setModelType("multinomial").fit(trainDataRdd)
-    //model.save("file:///D:/课程学习/大三下/大数据实验/task3/dataset/multinomialmodelhash100000")
-    val model = NaiveBayesModel.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/multinomialmodelhash50000")
+    val model = new NaiveBayes().setFeaturesCol("features").setModelType("multinomial").fit(trainDataRdd)
+    model.save("file:///D:/课程学习/大三下/大数据实验/task3/dataset/Bayesmodelhash10000")
+    //val model = NaiveBayesModel.load("file:///D:/课程学习/大三下/大数据实验/task3/dataset/multinomialmodelhash50000")
     val testpredictionAndLabel = model.transform(testDataRdd)
     testpredictionAndLabel.show(false)
     val rddresult = testpredictionAndLabel.select($"prediction", $"label").rdd
     val re = rddresult.map{case (line)=>(line(0).toString.toDouble, line(1).toString.toDouble)}
-    println("RDD")
-    re.take(4).foreach(println)
+    //println("RDD")
+    //re.take(4).foreach(println)
     val metric = new MulticlassMetrics(re)
     println("test accuracy" + metric.accuracy)
     for (i <- 0 to 19) println("test label " + i + " recall" + metric.recall(i))
     for (i <- 0 to 19) println("test label" + i + " precision" + metric.precision(i))
-
+    for (i <- 0 to 19) println("test label" + i + " f1Measure " + metric.fMeasure(i))
 
     val evaluator = new MulticlassClassificationEvaluator()
       .setLabelCol("label")

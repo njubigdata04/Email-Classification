@@ -27,7 +27,7 @@
 \end{abstract}
 
 \section{引言}
-
+本篇论文主要按预处理-分类方法-分类结果分析的顺序进行。第二部分简要分析了数据集的特征以及对数据集分类进行编号，便于接下来的处理。第三部分数据特征的选择和提取。第四部分为使用朴素贝叶斯对数据集进行训练和分类预测。第五部分为使用KNN对数据集进行分类与预测。第六部分为使用Spark实现邮件的自动分类，同样分为在Spark中进行数据特征的选择和提取，使用TF-IDF特征和Word2Vec特征，使用Spark的ml库进行分类预测。最后第七部分为分类预测结果的分析和总结。
 
 \section{数据分析}
 这是一个有监督的多分类问题。对于训练数据全集，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数为：\par
@@ -294,8 +294,8 @@ IDF-Job的输出文件格式为：
 	\includegraphics[width=0.6\textwidth]{tfidf.png}
 	\caption{特征向量权重计算（TF-IDF） \label{fig:tfidf}}
 \end{figure}
-\subsection{朴素贝叶斯}
-\subsubsection{原理推导}
+\section{朴素贝叶斯进行分类预测}
+\subsection{原理推导}
 朴素贝叶斯算法是生成模型中分类算法之一。所有朴素贝叶斯分类器都假设特定特征的值独立于给定类变量的任何其他特征的值。例如，如果水果是红色的，圆形的，直径约10厘米，则可以认为它是苹果。朴素贝叶斯分类器认为这些特征中的每一个都独立地贡献于该果实是苹果的概率，而不管任何可能的颜色，圆度和直径特征之间的相关性。
 抽象来看，朴素贝叶斯是一个条件概率模型：给定一个要分类的问题实例，用向量表示 $ \mathbf {x} =(x_ {1} , \dots, x_ {n})$代表一些n个特征（自变量），它为这个实例分配概率$p(C_ {k} \mid x_ {1}, \dots, x_ {n})$其中$C_{k}$表示$K$个可能的类别中的一个 。
 使用贝叶斯定理，条件概率可以分解为
@@ -311,7 +311,8 @@ $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ p(C_ {k
 多项式朴素贝叶斯使用多项事件模型，样本（特征向量）表示多项式生成某些事件的频率 $(p_ {1},\dots,p_ {n})$其中 $p_i$是事件i发生的概率（或多类情况下的K个多项式）。在词袋模型中事件表示单个文档中单词的出现。
 伯努利朴素贝叶斯：在多变量伯努利事件模型中，特征是描述输入的独立布尔值（二元变量）。
 尽管朴素贝叶斯分类器具有朴素设计和明显过于简单的假设，但它在许多复杂的现实世界中仍然运行良好。综合比较表明，贝叶斯分类的表现优于其他方法，特别是在文本处理方面。
-\subsubsection{Hadoop MapReduce实现}
+
+\subsection{文本分类中公式推导}
 词袋模型就是表示文本特征的一种方式。给定一篇文档，它会有很多特征，比如文档中每个单词出现的次数、某些单词出现的位置、单词的长度、单词出现的频率……而词袋模型只考虑一篇文档中单词出现的频率(次数)，用每个单词出现的频率作为文档的特征（或者说用单词出现的频率来代表该文档）。利用词袋模型表示文本特征来进行朴素贝叶斯分类器的实现。
 实际上就是求
 $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ p(C_ {k})\prod_{i = 1} ^ {n} p(w_ {i} \mid C_ {k})$$
@@ -320,11 +321,11 @@ $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ p(C_ {k
 $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ log \ p(C_ {k}) + \sum_{i = 1} ^ {n} log \ p(w_ {i} \mid C_ {k})$$
 训练朴素贝叶斯的过程其实就是计算先验概率$p(C_k)​$和后半部分似然函数的过程。
 
-\subsubsection{先验概率$p(c)$的计算}
+\subsection{先验概率$p(c)$的计算}
 $P(C_k)$的意思是：在所有的文档中，类别为$C_{k}$的文档出现的概率有多大。假设训练数据中一共有$N_{doc}$篇文档，只要数一下类别$C_{k}$的文档有多少个就能计算$P(C_k)$了，类别$C_{k}$的文档共有$N_k$篇，先验概率的计算公式如下：
 $$p(C_k)=\frac{N_K}{N_{doc}}$$
 
-\subsubsection{似然函数 $p(w_i|C_k)$ 的计算}
+\subsection{似然函数 $p(w_i|C_k)$ 的计算}
 由于是用词袋模型表示一篇文档d，对于文档d中的每个单词$w_i$，找到训练数据集中所有类别为$C_{k}$的文档，数一数 单词$w_i$在这些文档（类别为$C_{k}$）中出现的次数：$count(w_{i},C_{k})$。
 然后，再数一数训练数据集中类别为$C_{k}​$的文档一共有多少个单词
 $$\sum_{w \in v}count(w, C_{k})$$
@@ -334,7 +335,8 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)}{\sum_{w \in v}count(w, C_{k})}$$
 需要考虑特殊情况某一类的文档不包含某个词时，考虑add-one-smoothing，类似于拉普拉斯修正，其实就是将“出现次数加一”。此时似然函数变为：
 $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+1)}=\frac{count(w_i, C_k)+1}{\sum_{w \in v}count(w, C_{k})+|V|}$$
 其中$|V|$表示词库的单词数。
-\subsubsection{Hadoop MapReduce的实现}
+
+\subsection{Hadoop MapReduce的实现}
 首先需要数据预处理，计算每个类对应的文件数便于接下来计算先验概率$p(c)$。用一个Job来实现这个功能。
 
 在这个Job的Map阶段，输入的是前面经过处理的文件格式：每个样本是一个文件，文件名为“文件名-类编号”的格式。在Map阶段中利用split得到相应的文件名和类编号，输出键值对<类编号，文件名>
@@ -388,7 +390,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
 
 在训练阶段的Job中实现的功能是对每个样本中的每个单词，输出键值对<类编号\#单词，单词出现的次数>。使用这种结构的好处是：可以通过Map映射方便找到每个单词在不同类中的出现次数。
 
-在Map阶段中，利用FileSplit结构获得文件名，从文件名中就可以的获得单词所属的类别。用StringTokenizer划分出单词，对每个单词输出键值对<类编号\#单词, 1>
+在Map阶段中，利用FileSplit结构获得文件名，由于文件名由“文件名-类编号”格式构成，从文件名中就可以的获得单词所属的类别。用StringTokenizer划分出单词，对每个单词输出键值对<类编号\#单词, 1>
 
 在Combine和Reduce阶段中，对读入的键值对<类编号\#单词，单词出现的次数>进行合并，最后输出即可。
 
@@ -425,7 +427,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
 最终得到的输出结果截图如下：
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=0.4\textwidth]{GetClassNum.png}
+	\includegraphics[width=0.3\textwidth]{GetClassNum.png}
 	\caption{类编号与对应文件数 \label{fig:GetClassNum}}
 \end{figure}
 
@@ -705,7 +707,24 @@ val model = new NaiveBayes()
 此外，无论是通过TF-IDF还是Word2Vec来提取特征，随着决策树数量的上升，accuracy总体上来说是呈上升趋势，并且最终都逐渐趋向于80\%多附近，增速趋向平稳，并且在同一种特征提取方法下，预测结果是同分布的，它们的recall和precision值都服从同一种分布，通过横向对比，这两种特征提取方式的预测结果的分布也大致类似，在大多数类别上，它们的预测表现都十分相似，总体上来说，TF-IDF不同类别的预测表现较为均衡，而Word2Vec的预测表现则波动很大，在某些类别上表现很差。总体来说，如果关注accuracy，那么Word2Vec显然更好，它在少量决策树的情况下就已经比TF-IDF高出很多，并一直表现得更优。但如果关注precison，recall或者F1-score的话，两者区别不是很大，在每个类别上各有优劣，总体来说表现相近。
 \section{结果分析}
 使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
-
+\subsection{朴素贝叶斯结果分析}
+使用了Hadoop中MapReduce自己实现了朴素贝叶斯和在Spark中调库实现的朴素贝叶斯进行比较，通过对比20个类各自的召回率（recall）、精确率（precision）和F1 score，画出对应对比表格。
+ \begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.6\textwidth]{BayesRecall.png}
+	\caption{两种方式下20个类的召回率 \label{fig:BayesRecall}}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.6\textwidth]{BayesPrecision.png}
+	\caption{两种方式下20个类的精确率 \label{fig:BayesPrecision}}
+\end{figure}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.6\textwidth]{BayesF1.png}
+	\caption{两种方式下20个类的F1 Score \label{fig:BayesF1}}
+\end{figure}
+分析实验结果，可以发现，总体上来说Hadoop下自己实现的朴素贝叶斯预测分类效果和Spark实现效果相近，在处理分类第二类问题上都做的不是很好，这与文本特性有关，但是在其他类中均能达到相似的较好的效果，这也侧面说明了自己实现方法基本没有问题。在准确率上，Hadoop 的MapReduce准确率在测试集上为90.9894\%，而Spark分类的准确率为90.7244\%，造成的这个差距的原因是在FeatureHasher时设置的参数为10000，而实际单词数在10000以上，损失了部分词语。总体上看，横向对比其他方法，准确率有了极大的提升，说明朴素贝叶斯在这个任务上分类效果最好。
 \section{参考文献}
 【1】\href{https://www.cnblogs.com/loveling-0239/p/7884195.html}{Hadoop分布式缓存}\par
 【2】 \href{https://en.wikipedia.org/wiki/Tf%E2%80%93idf}{TF-IDF: Wikipedia} \par
