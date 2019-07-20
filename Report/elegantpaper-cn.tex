@@ -27,7 +27,7 @@
 \end{abstract}
 
 \section{引言}
-本篇论文主要按预处理-分类方法-分类结果分析的顺序进行。第二部分简要分析了数据集的特征以及对数据集分类进行编号，便于接下来的处理。第三部分数据特征的选择和提取。第四部分为使用朴素贝叶斯对数据集进行训练和分类预测。第五部分为使用KNN对数据集进行分类与预测。第六部分为使用Spark实现邮件的自动分类，同样分为在Spark中进行数据特征的选择和提取，使用TF-IDF特征和Word2Vec特征，使用Spark的ml库进行分类预测。最后第七部分为分类预测结果的分析和总结。
+本篇论文主要按预处理-算法原理-算法实现-结果分析的顺序进行。第二部分简要分析了训练数据集的特征，以对后续处理的方法起到指导性作用，便于接下来的处理。第三部分介绍了整个完整的运行流程，包括文本特征选择、特征向量权重计算、文本分类和样本预测，其中文本分类任务使用了不同的分类方法进行实现，包括Naive Bayes，KNN， SVM。第四部分为使用Spark实现邮件自动分类的完整流程，同样分为在Spark中进行数据特征的选择和提取，分别使用TF-IDF特征和Word2Vec特征，使用Spark的ml库中的SVM，Naive Bayes， Random Forest进行分类预测。最后第五部分汇总不同分类器下的为分类预测结果，并进行分析和总结，第六部分列出了一些实验过程中对我们起到很大帮助作用的文献和网页。
 
 \section{数据分析}
 这是一个有监督的多分类问题。对于训练数据全集，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数为：\par
@@ -139,8 +139,8 @@
 \end{algorithm}
 
 \subsubsection{运行结果}
-该任务的输出结果如下图所示：
-\begin{figure}[!htbp]
+该任务的输出结果见图1：全局文本特征。
+\begin{figure}[!htb]
 	\centering
 	\includegraphics[width=0.6\textwidth]{feature-out.png}
 	\caption{全局邮件文本特征 \label{fig:feature-out}}
@@ -165,7 +165,7 @@ $$\mathrm{tf{}idf_{i,j}} = \mathrm{tf_{i,j}} \times  \mathrm{idf_{i}}$$
 \subsection{Hadoop MapReduce 实现}
 由于TF-IDF设计到TF和IDF两种不同指标的计算，所以所有计算难以直接在一个job中完成。我们通过分解，将其划分为三个Job，分别对应于计算的三个阶段：TF计算（TF-Job），IDF计算（IDF-Job）和TF、IDF相乘的整合阶段（Integrate-Job）。
 
-\begin{figure}[htbp]
+\begin{figure}[!htb]
 	\centering
 	\includegraphics[width=0.6\textwidth]{tfidf_framework.png}
 	\caption{TF-IDF算法框架 \label{fig:tfidf_framework}}
@@ -287,15 +287,15 @@ IDF-Job的输出文件格式为：
   \end{algorithmic}
 \end{algorithm}
 
-\subsection{运行结果}
+\subsubsection{运行结果}
 通过将TF-IDF任务的输出格式整理后，最终的输出结果如下图所示：
 \begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.6\textwidth]{tfidf.png}
 	\caption{特征向量权重计算（TF-IDF） \label{fig:tfidf}}
 \end{figure}
-\section{朴素贝叶斯进行分类预测}
-\subsection{原理推导}
+\subsection{分类预测：朴素贝叶斯}
+\subsubsection{原理推导}
 朴素贝叶斯算法是生成模型中分类算法之一。所有朴素贝叶斯分类器都假设特定特征的值独立于给定类变量的任何其他特征的值。例如，如果水果是红色的，圆形的，直径约10厘米，则可以认为它是苹果。朴素贝叶斯分类器认为这些特征中的每一个都独立地贡献于该果实是苹果的概率，而不管任何可能的颜色，圆度和直径特征之间的相关性。
 抽象来看，朴素贝叶斯是一个条件概率模型：给定一个要分类的问题实例，用向量表示 $ \mathbf {x} =(x_ {1} , \dots, x_ {n})$代表一些n个特征（自变量），它为这个实例分配概率$p(C_ {k} \mid x_ {1}, \dots, x_ {n})$其中$C_{k}$表示$K$个可能的类别中的一个 。
 使用贝叶斯定理，条件概率可以分解为
@@ -312,7 +312,7 @@ $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ p(C_ {k
 伯努利朴素贝叶斯：在多变量伯努利事件模型中，特征是描述输入的独立布尔值（二元变量）。
 尽管朴素贝叶斯分类器具有朴素设计和明显过于简单的假设，但它在许多复杂的现实世界中仍然运行良好。综合比较表明，贝叶斯分类的表现优于其他方法，特别是在文本处理方面。
 
-\subsection{文本分类中公式推导}
+\subsubsection{文本分类中公式推导}
 词袋模型就是表示文本特征的一种方式。给定一篇文档，它会有很多特征，比如文档中每个单词出现的次数、某些单词出现的位置、单词的长度、单词出现的频率……而词袋模型只考虑一篇文档中单词出现的频率(次数)，用每个单词出现的频率作为文档的特征（或者说用单词出现的频率来代表该文档）。利用词袋模型表示文本特征来进行朴素贝叶斯分类器的实现。
 实际上就是求
 $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ p(C_ {k})\prod_{i = 1} ^ {n} p(w_ {i} \mid C_ {k})$$
@@ -321,11 +321,11 @@ $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ p(C_ {k
 $$\hat{y} = {\underset {k \in \ {1,\dots,K}} {\operatorname {argmax}}} \ log \ p(C_ {k}) + \sum_{i = 1} ^ {n} log \ p(w_ {i} \mid C_ {k})$$
 训练朴素贝叶斯的过程其实就是计算先验概率$p(C_k)​$和后半部分似然函数的过程。
 
-\subsection{先验概率$p(c)$的计算}
+\subsubsection{先验概率$p(c)$的计算}
 $P(C_k)$的意思是：在所有的文档中，类别为$C_{k}$的文档出现的概率有多大。假设训练数据中一共有$N_{doc}$篇文档，只要数一下类别$C_{k}$的文档有多少个就能计算$P(C_k)$了，类别$C_{k}$的文档共有$N_k$篇，先验概率的计算公式如下：
 $$p(C_k)=\frac{N_K}{N_{doc}}$$
 
-\subsection{似然函数 $p(w_i|C_k)$ 的计算}
+\subsubsection{似然函数 $p(w_i|C_k)$ 的计算}
 由于是用词袋模型表示一篇文档d，对于文档d中的每个单词$w_i$，找到训练数据集中所有类别为$C_{k}$的文档，数一数 单词$w_i$在这些文档（类别为$C_{k}$）中出现的次数：$count(w_{i},C_{k})$。
 然后，再数一数训练数据集中类别为$C_{k}​$的文档一共有多少个单词
 $$\sum_{w \in v}count(w, C_{k})$$
@@ -379,12 +379,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
   \end{algorithmic}
 \end{algorithm}
 
-最终得到的输出结果截图如下：
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.4\textwidth]{BayesTrainResult.png}
-	\caption{训练Job输出结果 \label{fig:BayesTrainResult}}
-\end{figure}
+最终得到的输出结果截图见图4：训练Job输出结果。
 
 在Hadoop MapReduce的实现中分成了两个Job来完成，分别是训练阶段的Job和预测阶段的Job。
 
@@ -424,11 +419,28 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
   \end{algorithmic}
 \end{algorithm}
 
-最终得到的输出结果截图如下：
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.3\textwidth]{GetClassNum.png}
-	\caption{类编号与对应文件数 \label{fig:GetClassNum}}
+最终得到的输出结果截图见图5：类编号与对应文件数
+
+
+\begin{figure}[!htb]
+  \begin{minipage}[t]{0.33\linewidth}
+  \centering
+  \includegraphics[height=3.5in]{BayesTrainResult.png}
+  \caption{训练Job输出结果 \label{fig:BayesTrainResult}}
+  \label{fig:side:a}
+  \end{minipage}
+  \begin{minipage}[t]{0.33\linewidth}
+  \centering
+  \includegraphics[height=3.5in]{GetClassNum.png}
+  \caption{类编号与对应文件数 \label{fig:GetClassNum}}
+  \label{fig:side:b}
+  \end{minipage}
+  \begin{minipage}[t]{0.33\linewidth}
+  \centering
+  \includegraphics[height=3.5in]{BayesPredictResult.png}
+  \caption{预测结果 \label{fig:BayesPredictResult}}
+  \label{fig:side:b}
+  \end{minipage}
 \end{figure}
 
 预测阶段Job实现根据样本数据，计算朴素贝叶斯方法下每个样本对应各个类的概率，比较得到最大概率对应的类别就是预测类别。
@@ -450,7 +462,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
     \Ensure
     输出键值对<文件名，类别\#似然函数数值>
   \State 定义全局缓存变量 Map<String, int> $trainSet$, $classSet$
-  \State 定义全局缓存变量 Set<String> $wordSum$    //记录词库
+  \State 定义全局缓存变量 Set<String> $wordSum$  \quad  \%记录词库
   \State Map阶段：分割每个单词并根据文件名获得类名编号，输出<类名\#单词，数量>
   \Function {setup}{$A$, $B$}
     \For{each ($key$, $value$) in $A$}
@@ -468,8 +480,8 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
       \For{each 类别 $c$ in ClassSet.keys}
         \State $key$ = $c$ + "\#" + $word$;
         \State $wordcount$ = $1$ + $trainSet$.get($key$);//类中对应的词数
-        \State $sumClass$ = $trainSet$.get($c$);//类对应的单词总数
-        \State $sumWord$ = $wordSum$.size(); //词库中词数量
+        \State $sumClass$ = $trainSet$.get($c$);\quad  \%类对应的单词总数
+        \State $sumWord$ = $wordSum$.size(); \quad  \%词库中词数量
         \State $result$ = log($wordcount$ / ($sumClass$ + $sumWord$));
         \State Emit($filename$, $c$ + "\#" + $result$);
    		\EndFor
@@ -512,12 +524,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+
   \end{algorithmic}
 \end{algorithm}
 
-得到的结果如下图。
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.4\textwidth]{BayesPredictResult.png}
-	\caption{预测结果 \label{fig:BayesPredictResult}}
-\end{figure}
+得到的结果截图见图6：预测结果。
 
 \section{Spark实现}
 \subsection{简介}
@@ -532,7 +539,7 @@ ML中的操作可以使用pipeline, 跟sklearn一样，可以把很多操作(算
 ML中无论是什么模型，都提供了统一的算法操作接口，比如模型训练都是fit；不像mllib中不同模型会有各种各样的trainXXX。
 MLlib在Spark2.0之后进入维护状态, 这个状态通常只修复BUG不增加新功能。
 
-所以综上我们在这里使用ml库来实现操作。
+所以综上我们在这里使用ML库来实现操作。
 \subsection{数据预处理：特征提取}
 \subsubsection{计算TF-IDF}
 第一步：读取原文本转换成DataFrame
@@ -709,22 +716,28 @@ val model = new NaiveBayes()
 使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
 \subsection{朴素贝叶斯结果分析}
 使用了Hadoop中MapReduce自己实现了朴素贝叶斯和在Spark中调库实现的朴素贝叶斯进行比较，通过对比20个类各自的召回率（recall）、精确率（precision）和F1 score，画出对应对比表格。
- \begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.6\textwidth]{BayesRecall.png}
-	\caption{两种方式下20个类的召回率 \label{fig:BayesRecall}}
-\end{figure}
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=0.6\textwidth]{BayesPrecision.png}
-	\caption{两种方式下20个类的精确率 \label{fig:BayesPrecision}}
-\end{figure}
-\begin{figure}[htbp]
+
+\begin{figure}[!htb]
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{BayesRecall.png}
+  \caption{两种方式下20个类的Recall \label{fig:BayesRecall}}
+  \label{fig:side:a}
+  \end{minipage}
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{BayesPrecision.png}
+  \caption{两种方式下20个类的Precision \label{fig:BayesPrecision}}
+  \label{fig:side:b}
+  \end{minipage}
+\end{figure} 
+
+\begin{figure}[!htb]
 	\centering
 	\includegraphics[width=0.6\textwidth]{BayesF1.png}
 	\caption{两种方式下20个类的F1 Score \label{fig:BayesF1}}
 \end{figure}
-分析实验结果，可以发现，总体上来说Hadoop下自己实现的朴素贝叶斯预测分类效果和Spark实现效果相近，在处理分类第二类问题上都做的不是很好，这与文本特性有关，但是在其他类中均能达到相似的较好的效果，这也侧面说明了自己实现方法基本没有问题。在准确率上，Hadoop 的MapReduce准确率在测试集上为90.9894\%，而Spark分类的准确率为90.7244\%，造成的这个差距的原因是在FeatureHasher时设置的参数为10000，而实际单词数在10000以上，损失了部分词语。总体上看，横向对比其他方法，准确率有了极大的提升，说明朴素贝叶斯在这个任务上分类效果最好。
+分析实验结果，可以发现，总体上来说Hadoop下自己实现的朴素贝叶斯预测分类效果和Spark实现效果相近，在处理分类第二类问题上都做的不是很好，这与文本特性有关，但是在其他类中均能达到相似的较好的效果，这也侧面说明了自己实现方法基本没有问题。在准确率上，Hadoop MapReduce的准确率在测试集上为90.9894\%，而Spark分类的准确率为90.7244\%，造成的这个差距的原因是在FeatureHasher时设置的参数为10000，而实际单词数在10000以上，损失了部分词语。总体上看，横向对比其他方法，准确率有了极大的提升，说明朴素贝叶斯在这个任务上分类效果最好。
 \section{参考文献}
 【1】\href{https://www.cnblogs.com/loveling-0239/p/7884195.html}{Hadoop分布式缓存}\par
 【2】 \href{https://en.wikipedia.org/wiki/Tf%E2%80%93idf}{TF-IDF: Wikipedia} \par
