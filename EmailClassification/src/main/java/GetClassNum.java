@@ -63,6 +63,7 @@ public class GetClassNum {
             int count = 0;
             for(Map.Entry<String, Integer> entry:list.entrySet()){
                 String val = Integer.toString(count) + "#" + entry.getValue().toString();
+                val = entry.getValue().toString();
                 count++;
                 context.write(new Text(entry.getKey()), new Text(val));
             }
