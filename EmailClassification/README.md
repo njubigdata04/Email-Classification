@@ -57,7 +57,7 @@ hadoop jar Train <类与文件数表> <训练样本> <输出位置>
 Predict命令是
 
 ```
-hadoop jar Predict <停词表> <训练样本输出>/part-r-00000 <预测样本> <输出位置>
+hadoop jar LogPredict <类与文件对应表> <训练样本输出>/part-r-00000 <预测样本> <输出位置>
 ```
 
 hadoop jar Predict /tmp/2019st04/classfile /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/BayesPredict
