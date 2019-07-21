@@ -4,13 +4,13 @@
 首先对原始训练数据进行停词和分词，输入为20_newsgroup原始训练数据文件夹，输出为分词后的干净文本，以及类名和类编号的对应关系。运行命令为：
 
 ```shell
-hadoop jar EmailClassification.jar SkipWords /data/task3/20_newsgroup /data/task3/Skip_words.txt /user/2019st04/task3/trainData/purefiles /user/2019st04/task3/classmap.txt
+hadoop jar EmailClassification.jar SkipWords /data/task3/20_newsgroup /data/task3/Stop_words.txt /user/2019st04/task3new/trainData/purefiles /user/2019st04/task3new/classmap.txt
 ```
 
 然后对干净文本进行特征提取，输出为文本特征全集。运行命令为：
 
 ```shell
-hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3/trainData/purefiles /user/2019st04/task3/feature-out
+hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3new/trainData/purefiles /user/2019st04/task3new/feature-out
 ```
 
 ## 特征向量权重计算
@@ -71,7 +71,9 @@ GetClassNum得到的是每个类的文件数
 
 Bayes读入的是类编号\t文件数，训练样本是一行一个单词，文件名为“文件名-类编号”
 
+获得类的文件数
 
+ hadoop jar ~/BigData-1.0-SNAPSHOT.jar GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/FileCal    
 
 Train的命令是
 
@@ -79,10 +81,12 @@ Train的命令是
 hadoop jar Train <类与文件数表> <训练样本> <输出位置>
 ```
 
+hadoop jar ~/BigData-1.0-SNAPSHOT.jar Train /tmp/2019st04/GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/BayesTrain
+
 Predict命令是
 
 ```
 hadoop jar LogPredict <类与文件对应表> <训练样本输出>/part-r-00000 <预测样本> <输出位置>
 ```
 
-hadoop jar Predict /tmp/2019st04/classfile /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/BayesPredict
+ hadoop jar ~/BigData-1.0-SNAPSHOT.jar LogPredict /tmp/2019st04/GetClassNum /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/FinalPredictBayes3
