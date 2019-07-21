@@ -26,6 +26,8 @@
 \keywords{邮件分类，并行计算，MapReduce，Spark}
 \end{abstract}
 
+\tableofcontents
+
 \section{引言}
 本篇论文主要按预处理-算法原理-算法实现-结果分析的顺序进行。第二部分简要分析了训练数据集的特征，以对后续处理的方法起到指导性作用，便于接下来的处理。第三部分介绍了整个完整的运行流程，包括文本特征选择、特征向量权重计算、文本分类和样本预测，其中文本分类任务使用了不同的分类方法进行实现，包括Naive Bayes，KNN， SVM。第四部分为使用Spark实现邮件自动分类的完整流程，同样分为在Spark中进行数据特征的选择和提取，分别使用TF-IDF特征和Word2Vec特征，使用Spark的ml库中的SVM，Naive Bayes， Random Forest进行分类预测。最后第五部分汇总不同分类器下的为分类预测结果，并进行分析和总结，第六部分列出了一些实验过程中对我们起到很大帮助作用的文献和网页。
 
@@ -181,7 +183,7 @@ $$\mathrm{idf_{i}} =  \log \frac{|D|}{|\{j: t_{i} \in d_{j}\}|}$$
 $$\mathrm{tf{}idf_{i,j}} = \mathrm{tf_{i,j}} \times  \mathrm{idf_{i}}$$
 某一特定文件内的高词语频率，以及该词语在整个文件集合中的低文件频率，可以产生出高权重的TF-IDF。因此，TF-IDF倾向于过滤掉常见的词语，保留重要的词语。
 
-\subsection{Hadoop MapReduce 实现}
+\subsubsection{Hadoop MapReduce 实现}
 由于TF-IDF设计到TF和IDF两种不同指标的计算，所以所有计算难以直接在一个job中完成。我们通过分解，将其划分为三个Job，分别对应于计算的三个阶段：TF计算（TF-Job），IDF计算（IDF-Job）和TF、IDF相乘的整合阶段（Integrate-Job）。
 
 \begin{figure}[!htb]
@@ -194,7 +196,7 @@ $$\mathrm{tf{}idf_{i,j}} = \mathrm{tf_{i,j}} \times  \mathrm{idf_{i}}$$
 在TF Job中，主要任务是统计每个文件所有单词个数以及每个单词的出现次数，并计算每个单词在每个文件中的出现比例。\par
 在Map阶段，读取在上个任务中生成的干净文本，输入为(文件名filenanme-文本内容text)键值对，对于每一个单词word，发射(word:filename, 1)键值对，同时文本单词数量计数器count加一，当整个文本遍历完成后，发射(!:count)键值对。值得注意的是，我们还需要自定义Partitioner，因为我们希望传入Reducer的数据按文件名排序（即key中':'后面的字符串），所以在自定义Partitioner中需要分割key并取':'后面的filename作为划分和排序标准。\par
 在Reduce阶段，输入为(xxx:filename, list[v1, v2, ...])键值对，此处xxx可能是单词word，也可能是标记符'!'，当它是'!'时，value中存储的是该file中所有单词的数量，由于'!'是键盘上可输出的字符的ASCII码最小的字符，并且我们的自定义Partitioner使得来自相同文本（即filename相同）的键值对排列在一起并且传入同一个Reudcer，因此对于任意一个文本，所有来自它的键值对中(!:filename,value)是第一个被Reducer接收到的键值对，因此我们将其存储到全局缓存变量allWordCnt中；当它是word时，list[v1,v2,...]中存储的是该word在该file中的出现次数列表，将其相加即可获得该单词在该文本中的频数，此时全局缓存变量allWordCnt存储的是该文本中所有单词的数量，将二者相除即可得到该单词在该文本中的TF值，最后发射键值对(word:filename, tf)。\par
-\begin{algorithm}[!htb]  
+\begin{algorithm}[!htb]
   \caption{TF-IDF算法: TF-Job}  
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -355,7 +357,7 @@ $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)}{\sum_{w \in v}count(w, C_{k})}$$
 $$p(w_ {i} \mid C_ {k})=\frac{count(w_i, C_k)+1}{\sum_{w \in v}(count(w, C_{k})+1)}=\frac{count(w_i, C_k)+1}{\sum_{w \in v}count(w, C_{k})+|V|}$$
 其中$|V|$表示词库的单词数。
 
-\subsection{Hadoop MapReduce的实现}
+\subsubsection{Hadoop MapReduce实现}
 首先需要数据预处理，计算每个类对应的文件数便于接下来计算先验概率$p(c)$。用一个Job来实现这个功能。
 
 在这个Job的Map阶段，输入的是前面经过处理的文件格式：每个样本是一个文件，文件名为“文件名-类编号”的格式。在Map阶段中利用split得到相应的文件名和类编号，输出键值对<类编号，文件名>
@@ -763,5 +765,43 @@ val model = new NaiveBayes()
 【3】 \href{https://blog.csdn.net/qq_41571900/article/details/85069055}{IDEA将依赖的第三方jar包打入jar包} \par
 【4】 \href{http://spark.apache.org/docs/latest/ml-features.html}{Spark MLlib Document}\par
 【5】 \href{http://dblab.xmu.edu.cn/blog/spark/}{Spark 教程}\par
-【6】 \href{https://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html}{NaiveBayes介绍}
+【6】 \href{https://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html}{NaiveBayes介绍}\par
+【7】 \href{https://blog.csdn.net/SCGH_Fx/article/details/60783466}{Hadoop-2.7.3集群卡在INFO mapreduce.Job: Running job}\par
+【8】 \href{https://blog.csdn.net/iteye_3893/article/details/82636364}{hadoop2 集群出现过的问题}
+\appendix
+ % \renewcommand{\appendixname}{Appendix~\Alph{section}}
+ \section{附录}
+ \subsection{运行时刻截图}
+
+ \begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.6\textwidth]{a1.jpg}
+	\caption{运行时刻截图1 \label{fig:feature-out}}
+\end{figure} 
+
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.6\textwidth]{a2.jpg}
+	\caption{运行时刻截图2 \label{fig:feature-out}}
+\end{figure} 
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.6\textwidth]{a3.jpg}
+	\caption{运行时刻截图3 \label{fig:feature-out}}
+\end{figure} 
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.6\textwidth]{a4.jpg}
+	\caption{运行时刻截图4 \label{fig:feature-out}}
+\end{figure} 
+
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.6\textwidth]{a5.jpg}
+	\caption{运行时刻截图5 \label{fig:feature-out}}
+\end{figure} 
+
 \end{document}
