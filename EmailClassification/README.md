@@ -21,72 +21,59 @@ hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3new/tra
 hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3/trainData/purefiles /user/2019st04/task3/trainData/TFIDF-out
 ```
 
+## 格式转换
+
+将上一步输出的TF-IDF转换成需要的格式。需要用到上一部分的输出以及单词与单词编号的对应关系。运行命令为：
+
+```
+hadoop jar EmailClassification.jar Preprocess/user/2019st04/task3/trainData/TFIDF-out  /user/2019st04/task3/trainData/word-out /user/2019st04/task3/trainData/feature-out
+```
 
 
-NaiveBayes类是负责朴素贝叶斯的，通过三个参数，
- hadoop jar ~/cjh/BigData-1.0-SNAPSHOT.jar Bayes /task3/Bjyclass/part-r-00000 /task3/purefiles /task3/purefiles /task3/BjyBayes
 
+## 获得类编号对应的文件数
 
+利用之前任务生成的干净文本，计算每个类编号对应的文件数
 
 ```shell
-hadoop jar NaiveBayes <停词表> <类表> <训练样本> <输出位置>
+hadoop jar EmailClassification.jar GetClassNum <分词后的干净文本> <输出位置>
+```
+
+具体举例问
+
+```shell
+ hadoop jar ~/BigData-1.0-SNAPSHOT.jar GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/FileCal
 ```
 
 
 
-```
-hadoop jar Bayes <类表> <训练样本> <输出位置>
-```
+## 朴素贝叶斯
 
+#### 训练   
 
+需要用到上一步得到的类与相应文件数量，Train的命令是
 
-GetClassNum是负责输出类以及类中文件数量的
-
-```powershell
-hadoop jar GetClassNum <停词表> <类表> <训练样本> <测试集> <输出位置>
+```shell
+hadoop jar EmailClassification.jar Train <类与文件数表> <训练样本> <输出位置>
 ```
 
-```
-URI stopPath = new URI(args[0]);
-URI classPath = new URI(args[1]);
-String inputTrainPath = args[2];
-String inputTestPath = args[3];
-String outputPath = args[4];
-```
-
-公式
-$$
-P(class|X) = \frac{P(X|class)P(class)}{P(X)}
-$$
-
-$$
-P(X|class) = 连乘\frac{P(x在class中出现的次数)}{P(class类中的单词数 + 词库中的单词数)}
-$$
-
-在训练过程中产生文件tmp保存的是《classname#单词， 次数》
-
-GetClassNum得到的是每个类的文件数
-
-每个类的单词数
-
-Bayes读入的是类编号\t文件数，训练样本是一行一个单词，文件名为“文件名-类编号”
-
-获得类的文件数
-
- hadoop jar ~/BigData-1.0-SNAPSHOT.jar GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/FileCal    
-
-Train的命令是
-
-```
-hadoop jar Train <类与文件数表> <训练样本> <输出位置>
+```shell
+hadoop jar EmailClassification.jar Train /tmp/2019st04/GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/BayesTrain
 ```
 
 hadoop jar ~/BigData-1.0-SNAPSHOT.jar Train /tmp/2019st04/GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/BayesTrain
 
+#### 预测
+
+需要用到训练的结果输出以及类与对应文件数量，输入为分词后干净的测试样本集。
+
 Predict命令是
 
 ```
-hadoop jar LogPredict <类与文件对应表> <训练样本输出>/part-r-00000 <预测样本> <输出位置>
+hadoop jar EmailClassification.jar LogPredict <类与文件对应表> <训练样本输出>/part-r-00000 <预测样本> <输出位置>
 ```
 
- hadoop jar ~/BigData-1.0-SNAPSHOT.jar LogPredict /tmp/2019st04/GetClassNum /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/FinalPredictBayes3
+```
+ hadoop jar EmailClassification.jar LogPredict /tmp/2019st04/GetClassNum /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/FinalPredictBayes3
+```
+
