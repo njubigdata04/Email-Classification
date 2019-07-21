@@ -18,7 +18,7 @@ hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3new/tra
 利用上个任务中生成的干净文本，计算各个单词在各个文件中的TF-IDF值，输入为干净文本文件夹，输出为TF-IDF文件。运行命令为：
 
 ```shell
-hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3/trainData/purefiles /user/2019st04/task3/trainData/TFIDF-out
+hadoop jar EmailClassification.jar Client /user/2019st04/task3new/trainData/purefiles /user/2019st04/task3new/trainData/TFIDF-out
 ```
 
 ## 格式转换
@@ -26,10 +26,10 @@ hadoop jar EmailClassification.jar FeatureExtraction /user/2019st04/task3/trainD
 将上一步输出的TF-IDF转换成需要的格式。需要用到上一部分的输出以及单词与单词编号的对应关系。运行命令为：
 
 ```
-hadoop jar EmailClassification.jar Preprocess/user/2019st04/task3/trainData/TFIDF-out  /user/2019st04/task3/trainData/word-out /user/2019st04/task3/trainData/feature-out
+hadoop jar EmailClassification.jar Preprocess /user/2019st04/task3new/feature-out/part-r-00000  /user/2019st04/task3new/trainData/TFIDF-out/part-r-00000 /user/2019st04/task3new/formatted_TFIDF.txt
 ```
 
-
+同时对于测试数据文件，也要进行上述三个步骤的计算，运行命令与训练数据基本相同，此处不再赘述。此处我们假设输出在testData文件夹下。
 
 ## 获得类编号对应的文件数
 
@@ -42,7 +42,7 @@ hadoop jar EmailClassification.jar GetClassNum <分词后的干净文本> <输�
 具体举例问
 
 ```shell
- hadoop jar ~/BigData-1.0-SNAPSHOT.jar GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/FileCal
+ hadoop jar ~/EmailClassification.jar GetClassNum /user/2019st04/task3new/trainData/purefiles /user/2019st04/task3new/trainData/FileCal
 ```
 
 
@@ -61,8 +61,6 @@ hadoop jar EmailClassification.jar Train <类与文件数表> <训练样本> <�
 hadoop jar EmailClassification.jar Train /tmp/2019st04/GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/BayesTrain
 ```
 
-hadoop jar ~/BigData-1.0-SNAPSHOT.jar Train /tmp/2019st04/GetClassNum /user/2019st04/task3/purefiles /tmp/2019st04/BayesTrain
-
 #### 预测
 
 需要用到训练的结果输出以及类与对应文件数量，输入为分词后干净的测试样本集。
@@ -73,7 +71,7 @@ Predict命令是
 hadoop jar EmailClassification.jar LogPredict <类与文件对应表> <训练样本输出>/part-r-00000 <预测样本> <输出位置>
 ```
 
-```
- hadoop jar EmailClassification.jar LogPredict /tmp/2019st04/GetClassNum /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/FinalPredictBayes3
+```shell
+hadoop jar EmailClassification.jar LogPredict /tmp/2019st04/GetClassNum /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/FinalPredictBayes3
 ```
 
