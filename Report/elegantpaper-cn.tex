@@ -29,12 +29,31 @@
 \section{引言}
 本篇论文主要按预处理-算法原理-算法实现-结果分析的顺序进行。第二部分简要分析了训练数据集的特征，以对后续处理的方法起到指导性作用，便于接下来的处理。第三部分介绍了整个完整的运行流程，包括文本特征选择、特征向量权重计算、文本分类和样本预测，其中文本分类任务使用了不同的分类方法进行实现，包括Naive Bayes，KNN， SVM。第四部分为使用Spark实现邮件自动分类的完整流程，同样分为在Spark中进行数据特征的选择和提取，分别使用TF-IDF特征和Word2Vec特征，使用Spark的ml库中的SVM，Naive Bayes， Random Forest进行分类预测。最后第五部分汇总不同分类器下的为分类预测结果，并进行分析和总结，第六部分列出了一些实验过程中对我们起到很大帮助作用的文献和网页。
 
-\section{数据分析}
-这是一个有监督的多分类问题。对于训练数据全集，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数为：\par
-\begin{table}[!htbp]
+实验分工见表一：小组分工。
+\begin{table}[!htb]
   \small
   \centering
-  \caption{Auto MPG and Price \label{tab:reg}}
+  \caption{小组分工 \label{tab:reg}}
+  \begin{tabular}{|p{2.5cm}|p{10cm}|}
+    \toprule
+    小组成员  &   负责任务  \\
+    \hline
+    曹佳涵 & 文本预处理，文本特征选择算法实现和改进，文本特征向量权重计算TF-IDF算法的实现，Spark Random Forest模型以及实验结果分析，实验报告框架搭建和内容撰写及排版修改。\\
+    \hline
+    白家杨 & 中间文件格式处理，朴素贝叶斯的MapReduce和Spark实现，对比结果分析，Spark特征提取中的TF-IDF和Word2Vec实现，对应部分的实验报告。 \\
+    \hline
+    刘笑今 & xxx \\
+    \bottomrule
+    \end{tabular}%
+\end{table}%\
+
+
+\section{数据分析}
+这是一个有监督的多分类问题。对于训练数据全集，经过分析，共有20个类别，它们编号，名称，以及包含的邮件文本个数见表2：训练文本数据分析。\par
+\begin{table}[!htb]
+  \small
+  \centering
+  \caption{训练文本数据分析 \label{tab:reg}}
     \begin{tabular}{lcc|lcc}
     \toprule
     类别编号  &   类别名称  &   包含邮件文本个数  &   类别编号  & 类别名称  & 包含邮件文本个数  \\
