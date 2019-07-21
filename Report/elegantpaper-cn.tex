@@ -684,8 +684,35 @@ val model = new NaiveBayes()
   .fit(trainDataRdd)
 \end{lstlisting}\par
 我们设置每一棵决策树的最大深度为30（RandomForestClassifier模型限制maxDepth参数最大为30），num为决策树的数量，我们通过改变num的值来观察随机森林预测效果随着决策树数量变化而发生的变化。\par
-对于样本特征提取，我们使用TF-IDF和Word2Vec两种方式，并进行了对比，实验结果如下图所示：
+对于样本特征提取，我们使用TF-IDF和Word2Vec两种方式进行实验，并进行了对比，实验结果见下一章节。
+\section{结果分析}
+使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
+\subsection{Naive Bayes结果分析}
+使用了Hadoop中MapReduce自己实现了朴素贝叶斯和在Spark中调库实现的朴素贝叶斯进行比较，通过对比20个类各自的召回率（recall）、精确率（precision）和F1 score，画出对应对比表格。
+\begin{figure}[!htb]
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{BayesRecall.png}
+  \caption{两种方式下20个类的Recall \label{fig:BayesRecall}}
+  \label{fig:side:a}
+  \end{minipage}
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{BayesPrecision.png}
+  \caption{两种方式下20个类的Precision \label{fig:BayesPrecision}}
+  \label{fig:side:b}
+  \end{minipage}
+\end{figure} 
 
+\begin{figure}[!htb]
+	\centering
+	\includegraphics[width=0.6\textwidth]{BayesF1.png}
+	\caption{两种方式下20个类的F1 Score \label{fig:BayesF1}}
+\end{figure}
+分析实验结果，可以发现，总体上来说Hadoop下自己实现的朴素贝叶斯预测分类效果和Spark实现效果相近，在处理分类第二类问题上都做的不是很好，这与文本特性有关，但是在其他类中均能达到相似的较好的效果，这也侧面说明了自己实现方法基本没有问题。在准确率上，Hadoop MapReduce的准确率在测试集上为90.9894\%，而Spark分类的准确率为90.7244\%，造成的这个差距的原因是在FeatureHasher时设置的参数为10000，而实际单词数在10000以上，损失了部分词语。总体上看，横向对比其他方法，准确率有了极大的提升，说明朴素贝叶斯在这个任务上分类效果最好。
+
+\subsection{Random Forest结果分析}
+Random Forest模型下不同数量的决策树和不同方式的词向量提取下获得的实验结果如下图所示：\par
 \begin{figure}[!htbp]
   \begin{minipage}[t]{0.5\linewidth}
   \centering
@@ -733,32 +760,8 @@ val model = new NaiveBayes()
     \end{figure}
 分析实验结果，我们可以看到，总体上来说Random Forest在这个任务下的表现较为平庸，accuracy只能达到80\%多，但我们认为这和Spark ML库提供的RandomForestClassifier模型对决策树maxDepth参数的限制有关，由于maxDepth最大只能为30，而本任务是一个20个类别的多分类问题，显然深度30的决策树是远远不够的，因此达到80\%左右的accuracy可以说是在意料之中。\par
 此外，无论是通过TF-IDF还是Word2Vec来提取特征，随着决策树数量的上升，accuracy总体上来说是呈上升趋势，并且最终都逐渐趋向于80\%多附近，增速趋向平稳，并且在同一种特征提取方法下，预测结果是同分布的，它们的recall和precision值都服从同一种分布，通过横向对比，这两种特征提取方式的预测结果的分布也大致类似，在大多数类别上，它们的预测表现都十分相似，总体上来说，TF-IDF不同类别的预测表现较为均衡，而Word2Vec的预测表现则波动很大，在某些类别上表现很差。总体来说，如果关注accuracy，那么Word2Vec显然更好，它在少量决策树的情况下就已经比TF-IDF高出很多，并一直表现得更优。但如果关注precison，recall或者F1-score的话，两者区别不是很大，在每个类别上各有优劣，总体来说表现相近。
-\section{结果分析}
-使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
-\subsection{朴素贝叶斯结果分析}
-使用了Hadoop中MapReduce自己实现了朴素贝叶斯和在Spark中调库实现的朴素贝叶斯进行比较，通过对比20个类各自的召回率（recall）、精确率（precision）和F1 score，画出对应对比表格。
 
-\begin{figure}[!htb]
-  \begin{minipage}[t]{0.5\linewidth}
-  \centering
-  \includegraphics[width=3.5in]{BayesRecall.png}
-  \caption{两种方式下20个类的Recall \label{fig:BayesRecall}}
-  \label{fig:side:a}
-  \end{minipage}
-  \begin{minipage}[t]{0.5\linewidth}
-  \centering
-  \includegraphics[width=3.5in]{BayesPrecision.png}
-  \caption{两种方式下20个类的Precision \label{fig:BayesPrecision}}
-  \label{fig:side:b}
-  \end{minipage}
-\end{figure} 
 
-\begin{figure}[!htb]
-	\centering
-	\includegraphics[width=0.6\textwidth]{BayesF1.png}
-	\caption{两种方式下20个类的F1 Score \label{fig:BayesF1}}
-\end{figure}
-分析实验结果，可以发现，总体上来说Hadoop下自己实现的朴素贝叶斯预测分类效果和Spark实现效果相近，在处理分类第二类问题上都做的不是很好，这与文本特性有关，但是在其他类中均能达到相似的较好的效果，这也侧面说明了自己实现方法基本没有问题。在准确率上，Hadoop MapReduce的准确率在测试集上为90.9894\%，而Spark分类的准确率为90.7244\%，造成的这个差距的原因是在FeatureHasher时设置的参数为10000，而实际单词数在10000以上，损失了部分词语。总体上看，横向对比其他方法，准确率有了极大的提升，说明朴素贝叶斯在这个任务上分类效果最好。
 \section{参考文献}
 【1】\href{https://www.cnblogs.com/loveling-0239/p/7884195.html}{Hadoop分布式缓存}\par
 【2】 \href{https://en.wikipedia.org/wiki/Tf%E2%80%93idf}{TF-IDF: Wikipedia} \par
