@@ -945,6 +945,11 @@ Random Forest模型下不同数量的决策树和不同方式的词向量提取�
 分析实验结果，可以看到SVM在稀疏短文本分类的任务下表现较好，可以达到87\%以上的准确率。但其并没有达到90\%的准确率，这与SVM的参数选择与迭代次数，以及数据的分布有着密切的关系。
 
 
+
+\section{总结与展望}
+本实验在Hadoop MapReduce以及Spark框架下对原始邮件数据进行分词、特征提取等一系列预处理，并分别在Hadoop MapReduce框架下使用KNN、Naive Bayes，以及Spark框架下Naive Bayes、SVM、Random Forest对数据进行分类预测。其中，Naive Bayes在诸多分类器中表现性能的最好，这也印证了Naive Bayes在短文本分类问题中的实用性。
+
+
 \section{参考文献}
 【1】\href{https://www.cnblogs.com/loveling-0239/p/7884195.html}{Hadoop分布式缓存}\par
 【2】 \href{https://en.wikipedia.org/wiki/Tf%E2%80%93idf}{TF-IDF: Wikipedia} \par
