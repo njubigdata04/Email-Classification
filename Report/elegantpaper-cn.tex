@@ -945,11 +945,44 @@ Random Forest模型下不同数量的决策树和不同方式的词向量提取�
 
 分析实验结果，可以看到SVM在稀疏短文本分类的任务下表现较好，可以达到87\%以上的准确率。但其并没有达到90\%的准确率，这与SVM的参数选择与迭代次数，以及数据的分布有着密切的关系。
 
+\subsection{各分类模型结果对比}
+我们将各个分类模型在测试数据上的Accuracy以及各个类别上的Precision，Recall，F1-score指标进行汇总和绘图分析，结果如下：\par
+
+\begin{figure}[H]
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{all_precision.jpg}
+  \caption{各分类预测模型测试集Precision比较}
+  \label{fig:side:a}
+  \end{minipage}
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{all_recall.jpg}
+  \caption{各分类预测模型测试集Recall比较}
+  \label{fig:side:b}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{all_f1.jpg}
+  \caption{各分类预测模型测试集F1-score比较}
+  \label{fig:side:a}
+  \end{minipage}
+  \begin{minipage}[t]{0.5\linewidth}
+  \centering
+  \includegraphics[width=3.5in]{all_acc.png}
+  \caption{各分类预测模型测试集Accuracy比较}
+  \label{fig:side:b}
+  \end{minipage}
+\end{figure}
+从Accuracy视角看，Naive Bayes展现出了最好的效果，这也体现出Naive Bayes在文本分类上的优势。但是在第3个类别上，Naive Bayes做出了较差的预测，它在第三个类别上的Recall和F1-score都达到了所有分类模型的最低值，这也一定程度上反映出Naive Bayes简单模型的劣势，对于某些特殊的数据会表现出较低的敏感性，从而进行错误的预测。总体上来说，四种分类模型在20个类别的预测结果上大致表现出了较相似的分布，在第3个类别上，RF和NB都获得了较高的Precision和较低的Recall和F1-score，而SVM，KNN，NB，RF都在第13个类别上表现不佳，因此这并不是单个分类模型的问题，可能与特征提取方式有关，我们的特征提取方式对于类别3和13的特征并没有很好地提取出来，导致分类模型在这两个类别上表现较差。总体来说，NB表现出了它在文本分类任务上的优势，而RF表现出了它在各个类别上预测结果的稳定性，虽然受限于模型限制的最大深度，但仍然可以获得都还不错的结果，如果可以将决策树深度继续调高，那么结果可以预见地会获得很大的提升。
+
 
 
 \section{总结与展望}
 本实验在Hadoop MapReduce以及Spark框架下对原始邮件数据进行分词、特征提取等一系列预处理，并分别在Hadoop MapReduce框架下使用KNN、Naive Bayes，以及Spark框架下Naive Bayes、SVM、Random Forest对数据进行分类预测。其中，Naive Bayes在诸多分类器中表现性能的最好，这也印证了Naive Bayes在短文本分类问题中的实用性。
-
 
 \section{参考文献}
 【1】\href{https://www.cnblogs.com/loveling-0239/p/7884195.html}{Hadoop分布式缓存}\par
