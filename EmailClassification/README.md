@@ -75,3 +75,11 @@ hadoop jar EmailClassification.jar LogPredict <类与文件对应表> <训练样
 hadoop jar EmailClassification.jar LogPredict /tmp/2019st04/GetClassNum /tmp/2019st04/BayesTrain/part-r-00000 /user/2019st04/task3/TestData/purefiles /tmp/2019st04/FinalPredictBayes3
 ```
 
+## KNN
+
+#### 训练 & 预测
+
+需要用到TF-IDF得到的特征向量文件，由于是懒惰学习，所以训练与预测的命令为
+
+```shell
+hadoop jar EmailClassification.jar KNNMain <邮件测试样本的特征向量文件> <输出位置>
