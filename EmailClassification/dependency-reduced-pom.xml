@@ -39,6 +39,7 @@
   </build>
   <properties>
     <hadoop.version>2.7.1</hadoop.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <lucene.version>5.0.0</lucene.version>
   </properties>
 </project>
