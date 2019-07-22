@@ -24,7 +24,7 @@
 
 \begin{abstract}
 \noindent 本实验的目标是通过 MapReduce 编程来实现邮件的自动分类，通过本课程设计的学习，可以体会如何使用 MapReduce 完成一个综合性的数据挖掘任务，包括全流程的数据预处理、样本分类、样本预测等。我们使用Hadoop MapReduce并行计算框架对原始邮件文本进行特征选择、特征向量权重计算、文本分类和样本预测任务，从而搭建起一个完整的文本分类处理流程。我们采用了不同的特征提取方法和分类算法并进行比较和分析。此外，我们使用Spark同样完成了实验。
-\keywords{邮件分类，并行计算，MapReduce，Spark}
+\keywords{邮件分类，并行计算，机器学习，MapReduce，Spark}
 \end{abstract}
 
 \tableofcontents
@@ -32,7 +32,7 @@
 \section{引言}
 本篇论文主要按预处理-算法原理-算法实现-结果分析的顺序进行。第二部分简要分析了训练数据集的特征，以对后续处理的方法起到指导性作用，便于接下来的处理。第三部分介绍了整个完整的运行流程，包括文本特征选择、特征向量权重计算、文本分类和样本预测，其中文本分类任务使用了不同的分类方法进行实现，包括Naive Bayes，KNN， SVM。第四部分为使用Spark实现邮件自动分类的完整流程，同样分为在Spark中进行数据特征的选择和提取，分别使用TF-IDF特征和Word2Vec特征，使用Spark的ml库中的SVM，Naive Bayes， Random Forest进行分类预测。最后第五部分汇总不同分类器下的为分类预测结果，并进行分析和总结，第六部分对实验过程与结果进行总结与展望，第七部分列出了一些实验过程中对我们起到很大帮助作用的文献和网页。
 
-实验分工见表一：小组分工。
+实验分工见下表：
 \begin{table}[H]
   \small
   \centering
@@ -41,7 +41,7 @@
     \toprule
     小组成员  &   负责任务  \\
     \hline
-    曹佳涵 & 文本预处理，文本特征选择算法实现和改进，文本特征向量权重计算TF-IDF算法的实现，Spark Random Forest模型以及实验结果分析，实验报告框架搭建和内容撰写及排版修改。\\
+    曹佳涵 & 文本预处理，文本特征选择算法实现和改进，文本特征向量权重计算TF-IDF算法的实现，Spark Random Forest模型以及实验结果分析，实验报告框架搭建、内容撰写、结果总结及排版修改。\\
     \hline
     白家杨 & 中间文件格式处理，朴素贝叶斯的MapReduce和Spark实现，对比结果分析，Spark特征提取中的TF-IDF和Word2Vec实现，对应部分的实验报告。 \\
     \hline
@@ -615,7 +615,8 @@ KNN算法的核心思想是如果一个样本在特征空间中的K个最相邻�
 \end{lstlisting}\par
 其中，label表征该样本所属的类别；后面每一项是该样本的一个特征及其特征值。\par
 然后进入Map方法。Map方法的目的是读入一个测试样本，然后计算它与训练样本中所有样本的距离，并保留距离最小的K个训练样本点，输出键值对<测试样本序号，最近的K个样本的类别>。其中，测试样本序号可以使用map方法的第一个参数(行号)代替，因为测试样本中每一行代表一个样本；最近的K个样本的类别通过封装一个自定义Writable类型：ListWritable进行传递。\par
-在Reduce阶段，只需要对map对每个测试样本发射的K个最近的样本类别，取其中数量最多的类别作为预测结果。
+在Reduce阶段，只需要对map对每个测试样本发射的K个最近的样本类别，取其中数量最多的类别作为预测结果。\par
+伪代码见Algorithm 11.
 \begin{algorithm}[!htb]
   \caption{KNN的预测过程}
   \label{alg:Framwork}
@@ -861,8 +862,9 @@ L(p)=\left\{
 \end{lstlisting}\par
 我们设置每一棵决策树的最大深度为30（RandomForestClassifier模型限制maxDepth参数最大为30），num为决策树的数量，我们通过改变num的值来观察随机森林预测效果随着决策树数量变化而发生的变化。\par
 对于样本特征提取，我们使用TF-IDF和Word2Vec两种方式进行实验，并进行了对比，实验结果见下一章节。
+
+
 \section{结果分析}
-使用hadoop的MapReduce多种方法实现出来的准确率如下表所示：
 \subsection{Naive Bayes结果分析}
 使用了Hadoop中MapReduce自己实现了朴素贝叶斯和在Spark中调库实现的朴素贝叶斯进行比较，通过对比20个类各自的召回率（recall）、精确率（precision）和F1 score，画出对应对比表格。
 \begin{figure}[H]
@@ -992,7 +994,8 @@ Random Forest模型下不同数量的决策树和不同方式的词向量提取�
 【5】 \href{http://dblab.xmu.edu.cn/blog/spark/}{Spark 教程}\par
 【6】 \href{https://nlp.stanford.edu/IR-book/html/htmledition/naive-bayes-text-classification-1.html}{NaiveBayes介绍}\par
 【7】 \href{https://blog.csdn.net/SCGH_Fx/article/details/60783466}{Hadoop-2.7.3集群卡在INFO mapreduce.Job: Running job}\par
-【8】 \href{https://blog.csdn.net/iteye_3893/article/details/82636364}{hadoop2 集群出现过的问题}
+【8】 \href{https://blog.csdn.net/iteye_3893/article/details/82636364}{hadoop2 集群出现过的问题}\par
+【9】 \href{https://blog.csdn.net/u011239443/article/details/51728659}{TF-IDF和Word2Vec提取文本特征值}
 \appendix
  % \renewcommand{\appendixname}{Appendix~\Alph{section}}
  \section{附录}
