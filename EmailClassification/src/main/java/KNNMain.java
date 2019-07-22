@@ -15,7 +15,7 @@ public class KNNMain {
             Configuration conf = new Configuration();
             Job job = Job.getInstance(conf, "KNN-MR");
 
-            job.setJarByClass(Main.class);
+            job.setJarByClass(KNNMain.class);
             job.setInputFormatClass(TextInputFormat.class);
             job.setMapperClass(KNNMapper.class);
             job.setReducerClass(KNNReducer.class);
