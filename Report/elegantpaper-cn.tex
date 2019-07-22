@@ -615,8 +615,8 @@ KNN算法的核心思想是如果一个样本在特征空间中的K个最相邻�
 \end{lstlisting}\par
 其中，label表征该样本所属的类别；后面每一项是该样本的一个特征及其特征值。\par
 然后进入Map方法。Map方法的目的是读入一个测试样本，然后计算它与训练样本中所有样本的距离，并保留距离最小的K个训练样本点，输出键值对<测试样本序号，最近的K个样本的类别>。其中，测试样本序号可以使用map方法的第一个参数(行号)代替，因为测试样本中每一行代表一个样本；最近的K个样本的类别通过封装一个自定义Writable类型：ListWritable进行传递。\par
-在Reduce阶段，只需要对map对每个测试样本发射的K个最近的样本类别，取其中数量最多的类别作为预测结果。整个预测算法伪代码如下：\par
-\begin{algorithm}[H]
+在Reduce阶段，只需要对map对每个测试样本发射的K个最近的样本类别，取其中数量最多的类别作为预测结果。
+\begin{algorithm}[!htb]
   \caption{KNN的预测过程}
   \label{alg:Framwork}
   \begin{algorithmic}[1]
@@ -624,27 +624,28 @@ KNN算法的核心思想是如果一个样本在特征空间中的K个最相邻�
     处理后生成的训练数据和测试数据
     \Ensure
     输出预测类别编号
-    \State 定义训练集List<Instance>：trainList
+    \State 定义训练集List<Instance>：$trainList$
   \Function {setup}{$Lines$}
-    \For{each line in Lines}
-      \State trainList.add(new Instance(line))
-      \Comment 在Instance类中封装了根据一行进行初始化的构造方法。
+    \For{each $line$ in $Lines$}
+      \State $trainList$.add(new Instance($line$))
+      \Comment 在Instance类中封装了根据行进行初始化的构造方法。
     \EndFor
   \EndFunction
   \Function {map}{$lineno$, $testLine$}
-    \State List<Double> distance(存储最小的K个距离), trainLable(存储距离最小的K个样本)
-    \State Instance 测试样本testInstance = new Instance(testLine)
+    \State List<Double> $distance$(存储最小的K个距离), $trainLable$(存储距离最小的K个样本)
+    \State Instance 测试样本$testInstance$ = new Instance($testLine$)
     \For{$instance$ in $trainList$}
-        dis = EuclideanDistance(instance, testInstance)
-        \IF dis小于distance List中最大的样本maxInstance,
-        	用当前样本替换maxInstance
+        \State $dis$ = EuclideanDistance($instance$, $testInstance$)
+        \If{$dis <$ distance List中最大的样本$maxInstance$}
+          \State 用当前样本替换$maxInstance$
+        \EndIf
     \EndFor
-    \State ListWritable<DoubleWritable> lables = new ListWritable<>(trainLable);
-    \State Emit(lineno, lables) // 输出结果
+    \State ListWritable<DoubleWritable> $lables$ = new ListWritable<>($trainLable$);
+    \State Emit($lineno$, $lables$) \% 输出结果
   \EndFunction
   \Function {reduce}{$lineno$, $lables$}
-  	IntWritable 预测结果predictedLable = valueOfMostFrequent(lables)
-    \State Emit($NullWritable.get()$, $predictedLable$) // 输出结果
+  	\State IntWritable 预测结果$predictedLable$ = valueOfMostFrequent($lables$)
+    \State Emit(NullWritable.get(), $predictedLable$) \% 输出结果
   \EndFunction
   \end{algorithmic}
 \end{algorithm}
