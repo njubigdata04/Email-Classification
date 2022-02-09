@@ -21,7 +21,7 @@
     </build>
 
     <properties>
-        <hadoop.version>2.7.1</hadoop.version>
+        <hadoop.version>2.10.1</hadoop.version>
         <hive.version>2.3.4</hive.version>
         <hbase.version>1.4.9</hbase.version>
     </properties>
